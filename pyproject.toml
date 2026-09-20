@@ -1,0 +1,37 @@
+# Кореневий файл монорепозиторію (uv workspace).
+# Тут лише загальні налаштування: список пакетів робочого простору,
+# інструменти розробника та конфігурація ruff. Залежності кожного сервісу
+# описані в його власному pyproject.toml.
+
+[project]
+name = "recipes-hub"
+version = "0.1.0"
+description = "Курсова робота з БД та ІС: розподілена система збору, зберігання та пошуку рецептів"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "pre-commit>=3.8",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.uv.workspace]
+members = ["contracts", "ingest-service", "writer-service", "query-service"]
+
+[tool.uv.sources]
+contracts = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/F — базові помилки, I — порядок імпортів, UP — сучасний синтаксис,
+# B — типові баги, ASYNC — помилки в асинхронному коді.
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["contracts", "ingest_service", "writer_service", "query_service"]

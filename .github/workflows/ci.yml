@@ -1,0 +1,32 @@
+# CI: запускається на кожен Pull Request і push у main.
+# Перевіряє стиль коду (ruff) і те, що всі модули імпортуються без помилок.
+# Коли з'являться тести, сюди додамо крок `uv run pytest`.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Встановити uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Встановити Python і залежності
+        run: |
+          uv python install 3.12
+          uv sync --all-packages
+
+      - name: Лінтер
+        run: uv run ruff check .
+
+      - name: Форматування
+        run: uv run ruff format --check .
+
+      - name: Імпорт усіх модулів
+        run: uv run python scripts/check_imports.py

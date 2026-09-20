@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recipes Hub — моніторинг</title>
+  <!-- HTMX: атрибути hx-* у розмітці замість власного JavaScript -->
+  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    em { background: #fff3a0; font-style: normal; }
+  </style>
+</head>
+<body>
+  <h1>Recipes Hub</h1>
+
+  <!-- 1. Керування швидкістю: при зміні слайдера HTMX надсилає PUT /api/generator -->
+  <section>
+    <h2>Швидкість завантаження</h2>
+    <!-- TODO: слайдер 10..5000 і кнопка Старт/Стоп -->
+  </section>
+
+  <!-- 2. Статистика: HTMX сам запитує /ui/stats щосекунди і підставляє відповідь -->
+  <section>
+    <h2>Статистика</h2>
+    <div hx-get="/ui/stats" hx-trigger="load, every 1s" hx-swap="innerHTML">
+      Завантаження…
+    </div>
+  </section>
+
+  <!-- 3. Пошук: результати підставляються в #results без перезавантаження сторінки -->
+  <section>
+    <h2>Пошук рецептів</h2>
+    <input type="search" name="q" placeholder="chicken garlic pasta"
+           hx-get="/ui/search" hx-trigger="keyup changed delay:300ms" hx-target="#results">
+    <div id="results"></div>
+  </section>
+</body>
+</html>

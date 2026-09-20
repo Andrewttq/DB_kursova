@@ -1,0 +1,27 @@
+# Налаштування логування (формат logging.config.dictConfig).
+# Рівень змінюється тут, без правок коду:
+#   ERROR   — лише критичні збої
+#   WARNING — те, що має насторожити
+#   INFO    — корисна статистика (скільки прочитано / опубліковано)
+#   DEBUG   — деталі для розробника (час кожної операції)
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+
+loggers:
+  ingest_service:
+    level: INFO
+  aio_pika:
+    level: WARNING
+
+root:
+  level: WARNING
+  handlers: [console]

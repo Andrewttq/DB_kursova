@@ -1,0 +1,27 @@
+# Налаштування логування (формат logging.config.dictConfig).
+# Рівень змінюється тут, без правок коду:
+#   ERROR   — лише критичні збої
+#   WARNING — те, що має насторожити
+#   INFO    — корисна статистика (пошуковий запит, статус, чи з кешу)
+#   DEBUG   — деталі для розробника (час відповіді Redis, ES, Mongo, Neo4j на кожен запит)
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+
+loggers:
+  query_service:
+    level: INFO
+  uvicorn.access:
+    level: WARNING
+
+root:
+  level: WARNING
+  handlers: [console]

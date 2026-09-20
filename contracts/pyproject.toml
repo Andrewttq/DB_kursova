@@ -1,0 +1,10 @@
+[project]
+name = "contracts"
+version = "0.1.0"
+description = "Спільний формат повідомлень між сервісами (контракт)"
+requires-python = ">=3.12,<3.13"
+dependencies = ["pydantic>=2.8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
