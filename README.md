@@ -1,6 +1,6 @@
 # Recipes Hub
 
-🇺🇦 [Українська](#українська) · 🇬🇧 [English](#english)
+[Українська](#українська) ·  [English](#english)
 
 ---
 
