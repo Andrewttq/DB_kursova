@@ -1,7 +1,7 @@
 # Recipes Hub
 
 [Українська](#українська) ·  [English](#english)
-
+- Іван - зона A, github - @ivan0950
 ---
 
 ## Українська
