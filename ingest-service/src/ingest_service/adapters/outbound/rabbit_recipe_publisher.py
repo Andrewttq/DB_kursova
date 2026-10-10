@@ -9,16 +9,18 @@ class RabbitRecipePublisher(RecipePublisherPort):
 
     Кожен RawRecipe перетворюється на contracts.RecipeIngestedEvent
     і серіалізується в JSON (event.model_dump_json()).
-    Черга має бути durable, а повідомлення — persistent, щоб вони
+    Публікація йде в обмінник типу fanout, а не в чергу: RabbitMQ сам копіює
+    кожне повідомлення в усі прив'язані черги (recipes.mongo, recipes.es, recipes.neo4j).
+    Обмінник має бути durable, а повідомлення — persistent, щоб вони
     не губилися при перезапуску RabbitMQ.
     """
 
-    def __init__(self, rabbit_url: str, queue_name: str) -> None:
+    def __init__(self, rabbit_url: str, exchange_name: str) -> None:
         self._rabbit_url = rabbit_url
-        self._queue_name = queue_name
+        self._exchange_name = exchange_name
 
     async def connect(self) -> None:
-        """Відкрити з'єднання та канал, оголосити чергу (викликається при старті)."""
+        """Відкрити з'єднання та канал, оголосити обмінник (викликається при старті)."""
         raise NotImplementedError
 
     async def publish_batch(self, recipes: list[RawRecipe]) -> int:

@@ -10,19 +10,21 @@ class StatsReadRepository(ABC):
 
     @abstractmethod
     async def get_counters(self) -> dict[str, int]:
-        """read_total, published_total, saved_total, failed_total."""
+        """Ключі словника: read, published, а також saved:<роль> і failed:<роль>
+        для кожної ролі writer-service (mongo, es, neo4j)."""
 
     @abstractmethod
     async def get_saved_last_second(self) -> int:
-        """Скільки документів збережено за останню повну секунду (write RPS)."""
+        """Скільки документів збережено в MongoDB за останню повну секунду (write RPS)."""
 
 
 class QueueMetricsPort(ABC):
     """Метрики брокера (реалізація: RabbitQueueMetricsAdapter)."""
 
     @abstractmethod
-    async def get_queue_depth(self) -> int:
-        """Кількість повідомлень, що чекають у черзі. Росте, коли БД не встигають."""
+    async def get_queue_depths(self) -> dict[str, int]:
+        """Назва черги -> кількість повідомлень, що чекають. Росте та черга,
+        сховище якої не встигає записувати, тому видно вузьке місце."""
 
 
 class IngestConfigPort(ABC):

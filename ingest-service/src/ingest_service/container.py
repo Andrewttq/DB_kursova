@@ -31,7 +31,7 @@ class Container:
 def build_container(settings: Settings) -> Container:
     # 1. Вихідні адаптери (конкретні реалізації портів)
     source = CsvRecipeSource(settings.ingest_csv_path)
-    publisher = RabbitRecipePublisher(settings.rabbit_url, settings.rabbit_queue)
+    publisher = RabbitRecipePublisher(settings.rabbit_url, settings.rabbit_exchange)
     config = RedisIngestConfigRepository(settings.redis_url, settings.ingest_default_rate)
     stats = RedisIngestStatsRepository(settings.redis_url)
 
@@ -41,9 +41,9 @@ def build_container(settings: Settings) -> Container:
         publisher=publisher,
         config=config,
         stats=stats,
-        rate_limiter=RateLimiter(),
+        rate_limiter=RateLimiter(settings.ingest_tick_seconds),
     )
 
     # 3. Вхідний адаптер отримує вхідний порт
-    scheduler = IngestScheduler(service)
+    scheduler = IngestScheduler(service, settings.ingest_tick_seconds)
     return Container(publisher=publisher, scheduler=scheduler)

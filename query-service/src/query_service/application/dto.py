@@ -19,7 +19,7 @@ class RecipeShortDTO(BaseModel):
     id: str
     title: str
     cuisine: str | None
-    cook_time_min: int
+    cook_time_min: int | None
     calories: float | None
 
 
@@ -69,6 +69,8 @@ class SearchRequestDTO(BaseModel):
     query: str = Field(min_length=1, max_length=200)
     cuisine: str | None = None
     max_cook_time_min: int | None = Field(default=None, ge=1)
+    max_calories: float | None = Field(default=None, ge=0)
+    page: int = Field(default=1, ge=1)
     size: int = Field(default=10, ge=1, le=50)
 
 
@@ -108,8 +110,8 @@ class IngestConfigDTO(BaseModel):
 class StatsDTO(BaseModel):
     read_total: int
     published_total: int
-    saved_total: int
+    saved_total: dict[str, int]  # за сховищами: mongo, es, neo4j
     failed_total: int
     write_rps: float
-    queue_depth: int
+    queue_depths: dict[str, int]  # за чергами: recipes.mongo, recipes.es, recipes.neo4j
     recent_searches: list[SearchLogDTO]

@@ -1,13 +1,14 @@
 """Фасад — реалізація вхідного порту SaveRecipesUseCase.
 
-Фасад не містить роботи з БД сам, він координує кілька сервісів в одну операцію:
-    RabbitRecipeConsumer -> RecipeCommandFacade -> RecipeInformationService (Mongo)
-                                                -> ChefService (Mongo)
-                                                -> RecipeRelationService (Neo4j)
-                                                -> RecipeIndexService (Elasticsearch)
-                                                -> WriteStatsService (Redis)
-Порядок важливий: спочатку MongoDB як джерело істини, потім Neo4j та Elasticsearch,
-які за потреби можна перебудувати з Mongo.
+Фасад не містить роботи з БД сам, він координує сервіси. Запущено три екземпляри
+writer-service з однаковим кодом, кожен читає власну чергу і пише у власне сховище.
+Які сервіси викликати, визначає роль екземпляра (налаштування WRITER_ROLE):
+    mongo -> RecipeInformationService + ChefService (MongoDB)
+    es    -> RecipeIndexService (Elasticsearch)
+    neo4j -> RecipeRelationService (Neo4j)
+WriteStatsService (Redis) спільний для всіх ролей і веде лічильник своєї ролі.
+Завдяки поділу повільний запис у граф не затримує підтвердження для MongoDB
+та Elasticsearch. Джерелом істини є MongoDB: індекс і граф можна перебудувати з неї.
 """
 
 from contracts import RecipeIngestedEvent
@@ -24,12 +25,14 @@ from writer_service.application.services.write_stats_service import WriteStatsSe
 class RecipeCommandFacade(SaveRecipesUseCase):
     def __init__(
         self,
+        role: str,
         recipes: RecipeInformationService,
         chefs: ChefService,
         relations: RecipeRelationService,
         index: RecipeIndexService,
         stats: WriteStatsService,
     ) -> None:
+        self._role = role
         self._recipes = recipes
         self._chefs = chefs
         self._relations = relations
@@ -38,10 +41,11 @@ class RecipeCommandFacade(SaveRecipesUseCase):
 
     async def save_batch(self, events: list[RecipeIngestedEvent]) -> int:
         """1. mappers: події -> Recipe та Chef;
-        2. recipes.save_many + chefs.save_many (Mongo);
-        3. relations.register_many (Neo4j) і index.index_many (ES) — можна паралельно
-           через asyncio.gather, бо вони не залежать одне від одного;
-        4. stats.on_saved(...). При помилці — stats.on_failed(...) і прокинути виняток,
+        2. залежно від ролі екземпляра:
+           mongo — recipes.save_many + chefs.save_many,
+           es    — index.index_many,
+           neo4j — relations.register_many (уся пачка одним запитом UNWIND);
+        3. stats.on_saved(...). При помилці — stats.on_failed(...) і прокинути виняток,
            щоб споживач НЕ підтвердив повідомлення і RabbitMQ доставив їх повторно.
         """
         raise NotImplementedError

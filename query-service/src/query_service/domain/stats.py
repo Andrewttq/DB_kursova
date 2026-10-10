@@ -9,10 +9,10 @@ class SystemStats:
 
     read_total: int  # прочитано ingest-service
     published_total: int  # опубліковано в брокер
-    saved_total: int  # збережено writer-service
+    saved_total: dict[str, int]  # збережено за сховищами: mongo, es, neo4j
     failed_total: int
-    write_rps: float  # збережено за останню секунду (з лічильників Redis)
-    queue_depth: int  # повідомлень у черзі RabbitMQ
+    write_rps: float  # збережено в MongoDB за останню секунду (з лічильників Redis)
+    queue_depths: dict[str, int]  # повідомлень у чергах recipes.mongo / .es / .neo4j
 
 
 @dataclass
