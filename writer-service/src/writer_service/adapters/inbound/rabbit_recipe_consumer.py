@@ -11,6 +11,9 @@ class RabbitRecipeConsumer:
     """Накопичує повідомлення в пачку і передає її в SaveRecipesUseCase.
 
     Ключові моменти:
+    - обмінник exchange_name має тип fanout; екземпляр оголошує власну чергу
+      queue_name (recipes.mongo, recipes.es або recipes.neo4j) і прив'язує її до обмінника,
+      тому кожне повідомлення потрапляє в усі три черги;
     - channel.set_qos(prefetch_count=...) — обмежує кількість непідтверджених
       повідомлень (зворотний тиск);
     - пачка відправляється, коли набралося batch_size або минув batch_timeout_ms;
@@ -22,6 +25,7 @@ class RabbitRecipeConsumer:
         self,
         use_case: SaveRecipesUseCase,
         rabbit_url: str,
+        exchange_name: str,
         queue_name: str,
         batch_size: int,
         batch_timeout_ms: int,
@@ -29,13 +33,14 @@ class RabbitRecipeConsumer:
     ) -> None:
         self._use_case = use_case
         self._rabbit_url = rabbit_url
+        self._exchange_name = exchange_name
         self._queue_name = queue_name
         self._batch_size = batch_size
         self._batch_timeout_ms = batch_timeout_ms
         self._prefetch_count = prefetch_count
 
     async def start(self) -> None:
-        """Підключитися, оголосити чергу, почати споживання."""
+        """Підключитися, оголосити обмінник і чергу, прив'язати чергу, почати споживання."""
         raise NotImplementedError
 
     async def stop(self) -> None:

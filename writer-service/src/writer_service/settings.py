@@ -1,6 +1,7 @@
 """Налаштування writer-service (читаються з .env, див. .env.example)."""
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,7 +14,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     rabbit_url: str = "amqp://guest:guest@localhost:5672/"
-    rabbit_queue: str = "recipes.ingest"
+    # Обмінник типу fanout, у який публікує ingest-service.
+    rabbit_exchange: str = "recipes"
+    # Роль екземпляра. Код в усіх трьох екземплярів однаковий, роль визначає,
+    # з якої черги він читає і в яке сховище пише: mongo, es або neo4j.
+    writer_role: Literal["mongo", "es", "neo4j"] = "mongo"
 
     mongo_url: str = "mongodb://localhost:27017"
     mongo_db: str = "recipes"
@@ -36,3 +41,8 @@ class Settings(BaseSettings):
     writer_prefetch_count: int = 1000
 
     log_config: Path = SERVICE_DIR / "config" / "logging.yaml"
+
+    @property
+    def rabbit_queue(self) -> str:
+        """Черга цього екземпляра: recipes.mongo, recipes.es або recipes.neo4j."""
+        return f"{self.rabbit_exchange}.{self.writer_role}"

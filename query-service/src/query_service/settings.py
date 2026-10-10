@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     rabbit_management_url: str = "http://localhost:15672"
-    rabbit_queue: str = "recipes.ingest"
+    # Три черги запису, по одній на сховище; панель показує довжину кожної.
+    rabbit_queues: list[str] = ["recipes.mongo", "recipes.es", "recipes.neo4j"]
 
     search_cache_ttl_sec: int = 300
     ingest_default_rate: int = 10

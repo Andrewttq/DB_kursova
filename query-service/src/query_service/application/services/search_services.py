@@ -13,7 +13,7 @@ class QueryNormalizer:
 
     Мета: різні за написанням, але однакові за змістом запити мають давати
     один ключ кешу. «Chicken Garlic Pasta» і «pasta, garlic chicken» ->
-    "search:chicken garlic pasta|*|*".
+    "chicken garlic pasta".
     Кроки: нижній регістр -> прибрати розділові знаки -> розбити на слова ->
     прибрати дублікати -> відсортувати за алфавітом -> склеїти.
     Стемінг (прибирання закінчень) — бонус, робиться пізніше.
@@ -22,8 +22,15 @@ class QueryNormalizer:
     def normalize(self, query: str) -> str:
         raise NotImplementedError
 
-    def cache_key(self, query: str, cuisine: str | None, max_cook_time_min: int | None) -> str:
-        """Ключ включає і фільтри, інакше пошук з різними фільтрами дасть однаковий кеш."""
+    def cache_key(
+        self, query: str, filters: dict[str, str | int | float | None], page: int, size: int
+    ) -> str:
+        """Ключ кешу: "search:" + sha1 від рядка «слова|фільтри|сторінка|розмір».
+
+        Слова — результат normalize(query); фільтри — json.dumps(filters, sort_keys=True).
+        Фільтри, номер сторінки та її розмір входять у ключ, інакше запит «chicken»
+        з фільтром italian і той самий запит з фільтром mexican дали б спільний результат.
+        """
         raise NotImplementedError
 
 
@@ -48,7 +55,13 @@ class RecipeSearchService:
         self._repository = repository
 
     async def search(
-        self, text: str, cuisine: str | None, max_cook_time_min: int | None, size: int
+        self,
+        text: str,
+        cuisine: str | None,
+        max_cook_time_min: int | None,
+        max_calories: float | None,
+        page: int,
+        size: int,
     ) -> list[SearchHit]:
         raise NotImplementedError
 

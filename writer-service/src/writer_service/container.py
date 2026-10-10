@@ -63,10 +63,11 @@ def build_container(settings: Settings) -> Container:
     chef_repo = MongoChefRepository(mongo, settings.mongo_db)
     graph_repo = Neo4jRecipeGraphRepository(neo4j)
     es_index = ElasticRecipeIndexRepository(es, settings.es_index)
-    stats_repo = RedisWriteStatsRepository(redis)
+    stats_repo = RedisWriteStatsRepository(redis, settings.writer_role)
 
-    # 3. Прикладні сервіси та фасад
+    # 3. Прикладні сервіси та фасад. Роль визначає, які сервіси фасад викликає.
     facade = RecipeCommandFacade(
+        role=settings.writer_role,
         recipes=RecipeInformationService(recipe_repo),
         chefs=ChefService(chef_repo),
         relations=RecipeRelationService(graph_repo),
@@ -78,6 +79,7 @@ def build_container(settings: Settings) -> Container:
     consumer = RabbitRecipeConsumer(
         use_case=facade,
         rabbit_url=settings.rabbit_url,
+        exchange_name=settings.rabbit_exchange,
         queue_name=settings.rabbit_queue,
         batch_size=settings.writer_batch_size,
         batch_timeout_ms=settings.writer_batch_timeout_ms,

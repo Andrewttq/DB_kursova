@@ -10,7 +10,13 @@ class RecipeSearchRepository(ABC):
 
     @abstractmethod
     async def search(
-        self, text: str, cuisine: str | None, max_cook_time_min: int | None, size: int
+        self,
+        text: str,
+        cuisine: str | None,
+        max_cook_time_min: int | None,
+        max_calories: float | None,
+        page: int,
+        size: int,
     ) -> list[SearchHit]: ...
 
 

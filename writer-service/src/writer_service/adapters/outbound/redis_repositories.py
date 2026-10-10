@@ -8,16 +8,19 @@ from writer_service.application.ports.outbound.stats_repositories import WriteSt
 class RedisWriteStatsRepository(WriteStatsRepository):
     """Реалізує WriteStatsRepository.
 
-    Ключі:
-        stats:saved_total          — загальна кількість збережених;
-        stats:saved:<unix-секунда> — збережені за конкретну секунду (TTL 60 с),
-                                     з них query-service рахує write RPS;
-        stats:failed_total.
+    Кожен екземпляр writer-service веде лічильники своєї ролі (mongo, es або neo4j),
+    бо три екземпляри пишуть у сховища незалежно один від одного. Ключі:
+        stats:saved:<роль>                — загальна кількість збережених
+                                            (stats:saved:mongo, stats:saved:es, stats:saved:neo4j);
+        stats:saved:<роль>:<unix-секунда> — збережені за конкретну секунду (TTL 60 с),
+                                            з них query-service рахує write RPS;
+        stats:failed:<роль>               — пачки, які не вдалося записати.
     Усі збільшення — атомарним INCRBY в одному pipeline.
     """
 
-    def __init__(self, client: Redis) -> None:
+    def __init__(self, client: Redis, role: str) -> None:
         self._client = client
+        self._role = role
 
     async def incr_saved(self, count: int) -> None:
         raise NotImplementedError

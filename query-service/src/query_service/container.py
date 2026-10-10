@@ -94,7 +94,7 @@ def build_container(settings: Settings) -> Container:
     search_log = SearchLogService(RedisSearchLogRepository(redis))
     stats = StatsService(
         RedisStatsReadRepository(redis),
-        RabbitQueueMetricsAdapter(http, settings.rabbit_management_url, settings.rabbit_queue),
+        RabbitQueueMetricsAdapter(http, settings.rabbit_management_url, settings.rabbit_queues),
     )
     generator = GeneratorControlService(
         RedisIngestConfigRepository(redis), settings.ingest_default_rate

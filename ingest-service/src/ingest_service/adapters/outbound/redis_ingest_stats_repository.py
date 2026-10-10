@@ -6,7 +6,7 @@ from ingest_service.application.ports.outbound.ingest_stats_port import IngestSt
 class RedisIngestStatsRepository(IngestStatsPort):
     """Реалізує IngestStatsPort через атомарну команду INCRBY.
 
-    Ключі: `stats:read_total`, `stats:published_total`.
+    Ключі: `stats:read`, `stats:published`.
     Атомарність важлива: якщо запустити кілька екземплярів сервісу,
     лічильник не «загубить» збільшення.
     """

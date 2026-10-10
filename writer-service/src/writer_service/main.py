@@ -2,6 +2,9 @@
 
 Запуск (з кореня репозиторію):
     uv run --package writer-service python -m writer_service.main
+Екземплярів три, по одному на сховище. Роль задає змінна оточення WRITER_ROLE
+(mongo, es або neo4j; за замовчуванням mongo), наприклад у PowerShell:
+    $env:WRITER_ROLE = "es"; uv run --package writer-service python -m writer_service.main
 """
 
 import asyncio
@@ -23,7 +26,8 @@ async def main() -> None:
     setup_logging(settings.log_config)
     container = build_container(settings)
 
-    await container.es_index.ensure_index()
+    if settings.writer_role == "es":
+        await container.es_index.ensure_index()
     await container.consumer.start()
     try:
         await asyncio.Event().wait()  # працюємо, доки процес не зупинять (Ctrl+C)

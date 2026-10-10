@@ -12,8 +12,10 @@ class ElasticRecipeSearchRepository(RecipeSearchRepository):
     Запит: bool-запит
         must   — multi_match по title^3, description, steps, ingredients
                  (^3 — назва важливіша за інші поля);
-        filter — term по cuisine, range по cook_time_min (фільтри не впливають на score
-                 і кешуються самим Elasticsearch).
+        filter — term по cuisine, range по cook_time_min і calories (фільтри не впливають
+                 на score і кешуються самим Elasticsearch).
+    Рецепти без часу чи калорійності (None) у відповідний range-фільтр не потрапляють.
+    Посторінкове виведення: from = (page - 1) * size.
     highlight по description і steps -> SearchHit.snippet з тегами <em>.
     """
 
@@ -22,6 +24,12 @@ class ElasticRecipeSearchRepository(RecipeSearchRepository):
         self._index_name = index_name
 
     async def search(
-        self, text: str, cuisine: str | None, max_cook_time_min: int | None, size: int
+        self,
+        text: str,
+        cuisine: str | None,
+        max_cook_time_min: int | None,
+        max_calories: float | None,
+        page: int,
+        size: int,
     ) -> list[SearchHit]:
         raise NotImplementedError

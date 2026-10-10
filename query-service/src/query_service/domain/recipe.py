@@ -14,7 +14,7 @@ class Recipe:
     title: str
     chef_id: str
     cuisine: str | None
-    cook_time_min: int
+    cook_time_min: int | None = None  # None = час невідомий або помилковий
     calories: float | None = None
     tags: list[str] = field(default_factory=list)
     ingredients: list[str] = field(default_factory=list)
@@ -24,8 +24,13 @@ class Recipe:
 
 @dataclass
 class Recommendation:
-    """Рецепт-рекомендація з поясненням, чому його запропоновано."""
+    """Рецепт-рекомендація з поясненням, чому його запропоновано.
+
+    common_ingredients — кількість спільних інгредієнтів (показується користувачу);
+    score — сума 1 / recipe_count за спільними інгредієнтами, за нею впорядковано видачу.
+    """
 
     recipe_id: str
     title: str
     common_ingredients: int
+    score: float

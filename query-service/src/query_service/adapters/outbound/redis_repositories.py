@@ -31,7 +31,7 @@ class RedisSearchCache(SearchCachePort):
 
 
 class RedisSearchLogRepository(SearchLogRepository):
-    """Журнал: список `search:log`, LPUSH нового запису + LTRIM до 50 останніх."""
+    """Журнал: список `search:log`, LPUSH нового запису + LTRIM до 100 останніх."""
 
     def __init__(self, client: Redis) -> None:
         self._client = client
@@ -44,7 +44,12 @@ class RedisSearchLogRepository(SearchLogRepository):
 
 
 class RedisStatsReadRepository(StatsReadRepository):
-    """Читає лічильники stats:*, які записують ingest- та writer-service."""
+    """Читає лічильники stats:*, які записують ingest- та writer-service.
+
+    Ключі: stats:read, stats:published (ingest-service);
+    stats:saved:<роль>, stats:failed:<роль> для ролей mongo, es, neo4j
+    (кожен екземпляр writer-service веде власні лічильники).
+    """
 
     def __init__(self, client: Redis) -> None:
         self._client = client
@@ -53,7 +58,7 @@ class RedisStatsReadRepository(StatsReadRepository):
         raise NotImplementedError
 
     async def get_saved_last_second(self) -> int:
-        """Ключ stats:saved:<попередня unix-секунда>."""
+        """Ключ stats:saved:mongo:<попередня unix-секунда>."""
         raise NotImplementedError
 
 

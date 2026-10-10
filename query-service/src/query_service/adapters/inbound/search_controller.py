@@ -24,7 +24,13 @@ class SearchController:
         )
 
     async def search_json(
-        self, q: str, cuisine: str | None = None, max_cook_time_min: int | None = None
+        self,
+        q: str,
+        cuisine: str | None = None,
+        max_cook_time_min: int | None = None,
+        max_calories: float | None = None,
+        page: int = 1,
+        size: int = 10,
     ) -> SearchResponseDTO:
         raise NotImplementedError
 
