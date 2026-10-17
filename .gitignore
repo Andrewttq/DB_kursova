@@ -11,6 +11,7 @@ __pycache__/
 
 # Дані (CSV-набір великий, завантажується окремо)
 data/*.csv
+data/*.pkl
 
 # IDE
 .vscode/

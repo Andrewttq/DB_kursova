@@ -35,3 +35,8 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["contracts", "ingest_service", "writer_service", "query_service"]
+
+[tool.pytest.ini_options]
+testpaths = ["contracts/tests", "ingest-service/tests", "writer-service/tests", "query-service/tests"]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"
