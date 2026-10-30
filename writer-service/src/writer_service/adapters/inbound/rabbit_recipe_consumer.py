@@ -4,12 +4,14 @@
 перетворити його на виклик вхідного порту. Бізнес-логіки тут немає.
 """
 
-from writer_service.application.ports.inbound.save_recipes_use_case import SaveRecipesUseCase
 import asyncio
 import json
 import logging
+
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
+
+from writer_service.application.ports.inbound.save_recipes_use_case import SaveRecipesUseCase
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ class RabbitRecipeConsumer:
         """Підключитися, оголосити обмінник і чергу, прив'язати чергу, почати споживання."""
         self._connection = await aio_pika.connect_robust(self._rabbit_url)
         self._channel = await self._connection.channel()
-        
+
         await self._channel.set_qos(prefetch_count=self._prefetch_count)
         exchange = await self._channel.declare_exchange(
             name=self._exchange_name, type=aio_pika.ExchangeType.FANOUT
@@ -68,7 +70,7 @@ class RabbitRecipeConsumer:
     async def _on_message(self, message: AbstractIncomingMessage) -> None:
         """Обробляє одне повідомлення, додає в пачку. Якщо пачка повна — зберігає."""
         data = json.loads(message.body.decode("utf-8"))
-        
+
         self._current_batch.append(data)
         self._current_messages.append(message)
         if len(self._current_batch) == 1:
@@ -81,11 +83,12 @@ class RabbitRecipeConsumer:
         """Запускає фонове очікування, щоб відправити неповну пачку по тайм-ауту."""
         if self._timer_task and not self._timer_task.done():
             self._timer_task.cancel()
-            
+
         async def timer() -> None:
             await asyncio.sleep(self._batch_timeout_ms / 1000.0)
             if self._current_batch:
                 await self._process_batch()
+
         self._timer_task = asyncio.create_task(timer())
 
     async def _process_batch(self) -> None:
