@@ -16,3 +16,6 @@ data/*.pkl
 # IDE
 .vscode/
 .idea/
+
+# logs
+logs/
