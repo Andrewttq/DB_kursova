@@ -12,6 +12,13 @@ formatters:
     format: "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
 
 handlers:
+  file:
+    class: logging.handlers.RotatingFileHandler
+    filename: logs/query-service.log
+    maxBytes: 1000000
+    backupCount: 3
+    encoding: utf-8
+    formatter: standard
   console:
     class: logging.StreamHandler
     formatter: standard
@@ -24,4 +31,4 @@ loggers:
 
 root:
   level: WARNING
-  handlers: [console]
+  handlers: [console,file]

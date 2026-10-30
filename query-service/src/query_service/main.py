@@ -8,6 +8,7 @@
 """
 
 import logging.config
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -19,6 +20,7 @@ from query_service.container import build_container
 from query_service.settings import Settings
 
 settings = Settings()
+os.makedirs("logs", exist_ok=True)
 with open(settings.log_config, encoding="utf-8") as f:
     logging.config.dictConfig(yaml.safe_load(f))
 
