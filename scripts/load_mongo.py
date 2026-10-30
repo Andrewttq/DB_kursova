@@ -38,6 +38,9 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
+    names = ["name1", "name2", "name3"]
+    lastnames = ["lastname1", "lastname2", "lastname3"]
+
     source = CsvRecipeSource(args.csv_path)
     client = AsyncMongoClient("mongodb://localhost:27017")
     recipe_repo = MongoRecipeRepository(client=client, db_name="recipes")
@@ -47,9 +50,13 @@ def main() -> None:
         batch = asyncio.run(source.next_batch(args.batch_size))
         recipes = clear_batch(batch)
         print(f"Loaded {len(recipes)} recipes from {args.csv_path}")
-        recipe_repo.upsert_many(recipes)
+        asyncio.run(recipe_repo.upsert_many(recipes))
         print(f"Upserted {len(recipes)} recipes to recipes MongoDB")
-        chef_repo.upsert_many([generate_chef(recipe.chef_id, [], []) for recipe in recipes])
+        asyncio.run(
+            chef_repo.upsert_many(
+                [generate_chef(recipe.chef_id, names, lastnames) for recipe in recipes]
+            )
+        )
         print(f"Upserted {len(recipes)} chefs to chefs MongoDB")
 
 
