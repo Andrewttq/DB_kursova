@@ -2,7 +2,6 @@
 
 from pymongo import AsyncMongoClient
 
-
 from query_service.application.ports.outbound.chef_repositories import ChefReadRepository
 from query_service.application.ports.outbound.recipe_repositories import RecipeReadRepository
 from query_service.domain.chef import Chef

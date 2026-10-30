@@ -5,7 +5,11 @@ mongos сам визначає за ключем шардування, на як
 Колекція recipes шардована за ключем { _id: "hashed" }.
 """
 
-from pymongo import AsyncMongoClient
+import logging
+from dataclasses import asdict
+
+from pymongo import AsyncMongoClient, ReplaceOne
+from pymongo.errors import BulkWriteError
 
 from writer_service.application.ports.outbound.chef_repositories import ChefRepository
 from writer_service.application.ports.outbound.recipe_repositories import (
@@ -13,12 +17,9 @@ from writer_service.application.ports.outbound.recipe_repositories import (
 )
 from writer_service.domain.chef import Chef
 from writer_service.domain.recipe import Recipe
-from pymongo import ReplaceOne
-from dataclasses import asdict
-import logging
-from pymongo.errors import BulkWriteError
 
 logger = logging.getLogger(__name__)
+
 
 class MongoRecipeRepository(RecipeDocumentRepository):
     """Реалізує RecipeDocumentRepository.
@@ -38,13 +39,11 @@ class MongoRecipeRepository(RecipeDocumentRepository):
         for recipe in recipes:
             doc = asdict(recipe)
             doc["_id"] = doc.pop("id")
-            op = ReplaceOne(filter = {"_id": doc["_id"]},
-                            replacement = doc,
-                            upsert = True)
+            op = ReplaceOne(filter={"_id": doc["_id"]}, replacement=doc, upsert=True)
             operations.append(op)
-        
+
         try:
-            result = await self._collection.bulk_write(operations, ordered = False)
+            result = await self._collection.bulk_write(operations, ordered=False)
             return result.upserted_count + result.matched_count
         except BulkWriteError as e:
             logger.error("Entry error: %s", e)
@@ -68,12 +67,10 @@ class MongoChefRepository(ChefRepository):
         for chef in chefs:
             doc = asdict(chef)
             doc["_id"] = doc.pop("id")
-            op = ReplaceOne(filter = {"_id": doc["_id"]},
-                                        replacement = doc,
-                                        upsert = True)
+            op = ReplaceOne(filter={"_id": doc["_id"]}, replacement=doc, upsert=True)
             operations.append(op)
         try:
-            result = await self._collection.bulk_write(operations, ordered = False)
+            result = await self._collection.bulk_write(operations, ordered=False)
             return result.upserted_count + result.matched_count
         except BulkWriteError as e:
             logger.error("Entry error: %s", e)
