@@ -35,5 +35,24 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+
+  query-service:
+    build:
+      context: .
+      dockerfile: query-service/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+     MONGO_URL: mongodb://mongo:27017
+     REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+       condition: service_healthy
+
+
 volumes:
   mongo-data:
