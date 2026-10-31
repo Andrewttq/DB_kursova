@@ -29,8 +29,8 @@ services:
 
   mongos:
     image: mongo:8.0
-    command: mongos --configdb cfgRS/mongo-cfg:27018 --port 27018 --bind_ip_all
-    ports: ["27018:27018"]
+    command: mongos --configdb cfgRS/mongo-cfg:27017 --port 27017 --bind_ip_all
+    ports: ["27018:27017"]
 
 
 
