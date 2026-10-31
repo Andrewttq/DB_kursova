@@ -18,6 +18,7 @@ from pymongo import AsyncMongoClient
 from redis.asyncio import Redis
 
 from query_service.adapters.inbound.chef_controller import ChefController
+from query_service.adapters.inbound.health_controller import HealthController
 from query_service.adapters.inbound.monitoring_controller import MonitoringController
 from query_service.adapters.inbound.recipe_controller import RecipeController
 from query_service.adapters.inbound.search_controller import SearchController
@@ -115,6 +116,7 @@ def build_container(settings: Settings) -> Container:
     routers = [
         RecipeController(recipe_facade).router,
         ChefController(chef_facade).router,
+        HealthController(redis, mongo).router,
         SearchController(search_facade, templates).router,
         MonitoringController(monitoring_facade, monitoring_facade, templates).router,
         UiController(templates).router,
