@@ -9,7 +9,7 @@
 
 import asyncio
 import logging.config
-
+import os
 import yaml
 
 from writer_service.container import build_container
@@ -18,6 +18,7 @@ from writer_service.settings import Settings
 
 def setup_logging(path: str) -> None:
     with open(path, encoding="utf-8") as f:
+        os.makedirs("logs", exist_ok=True)
         logging.config.dictConfig(yaml.safe_load(f))
 
 
