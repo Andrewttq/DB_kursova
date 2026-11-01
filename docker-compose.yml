@@ -14,6 +14,19 @@ services:
 
     volumes:
       - mongo-data:/data/db
+  writer-service:
+    build:
+      context: .
+      dockerfile: writer-service/Dockerfile
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["python", "-m", "writer_service.demo"]
+
 
   redis:
     image: redis:7-alpine
