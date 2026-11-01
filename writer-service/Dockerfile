@@ -6,4 +6,4 @@ COPY contracts ./contracts
 COPY writer-service ./writer-service
 RUN uv sync --frozen --package writer-service --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
-CMD ["python", "-m", "wtiter_service.main"]
+CMD ["python", "-m", "writer_service.main"]

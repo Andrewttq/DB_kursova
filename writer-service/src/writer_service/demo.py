@@ -9,7 +9,7 @@ from writer_service.domain.recipe import Recipe
 from writer_service.main import setup_logging
 from writer_service.settings import Settings
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("writer_service.demo")
 async def main() -> None:
     settings = Settings()
     setup_logging(settings.log_config)
@@ -21,9 +21,8 @@ async def main() -> None:
               ]
     saved = await repo.upsert_many(recipes)
     log.info("Записано рецептів: %s", saved)
-    doc = await client[settings.mongo_db]
-    ["recipes"].find_one({"_id": "r-demo-1"})
+    doc = await client[settings.mongo_db]["recipes"].find_one({"_id": "r-demo-1"})
     log.info("Прочитано з MongoDB: %s", doc)
     await client.close()
-    if __name__ == "__main__":
-        asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
