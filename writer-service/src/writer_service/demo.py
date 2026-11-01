@@ -9,7 +9,7 @@ from writer_service.domain.recipe import Recipe
 from writer_service.main import setup_logging
 from writer_service.settings import Settings
 
-log = logging.getLogger(__name__).__name__
+log = logging.getLogger(__name__)
 async def main() -> None:
     settings = Settings()
     setup_logging(settings.log_config)
