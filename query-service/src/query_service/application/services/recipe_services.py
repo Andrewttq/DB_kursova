@@ -14,10 +14,10 @@ class RecipeInformationService:
         self._repository = repository
 
     async def get(self, recipe_id: str) -> Recipe | None:
-        raise NotImplementedError
+        return await self._repository.find_by_id(recipe_id)
 
     async def get_many(self, recipe_ids: list[str]) -> list[Recipe]:
-        raise NotImplementedError
+        return await self._repository.find_by_ids(recipe_ids)
 
     async def filter(
         self,
@@ -28,7 +28,15 @@ class RecipeInformationService:
         size: int,
     ) -> list[Recipe]:
         """Перетворити page/size на skip/limit і звернутися до репозиторію."""
-        raise NotImplementedError
+
+        skip = (page - 1) * size
+        return await self._repository.find_by_filter(
+            cuisine=cuisine,
+            max_cook_time_min=max_cook_time_min,
+            max_calories=max_calories,
+            skip=skip,
+            limit=size,
+        )
 
 
 class RecipeRelationService:

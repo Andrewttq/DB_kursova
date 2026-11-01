@@ -9,4 +9,4 @@ class ChefService:
         self._repository = repository
 
     async def get(self, chef_id: str) -> Chef | None:
-        raise NotImplementedError
+        return await self._repository.find_by_id(chef_id)

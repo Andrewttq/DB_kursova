@@ -12,11 +12,29 @@ from query_service.domain.search import SearchHit, SearchLogEntry
 
 
 def recipe_to_short_dto(recipe: Recipe) -> RecipeShortDTO:
-    raise NotImplementedError
+    return RecipeShortDTO(
+        id=recipe.id,
+        title=recipe.title,
+        cuisine=recipe.cuisine,
+        cook_time_min=recipe.cook_time_min,
+        calories=recipe.calories,
+    )
 
 
 def recipe_to_card_dto(recipe: Recipe, chef_name: str) -> RecipeCardDTO:
-    raise NotImplementedError
+    return RecipeCardDTO(
+        id=recipe.id,
+        title=recipe.title,
+        cuisine=recipe.cuisine,
+        cook_time_min=recipe.cook_time_min,
+        calories=recipe.calories,
+        tags=recipe.tags,
+        chef_id=recipe.chef_id,
+        ingredients=recipe.ingredients,
+        steps=recipe.steps,
+        description=recipe.description,
+        chef_name=chef_name,
+    )
 
 
 def recommendation_to_dto(rec: Recommendation) -> RecommendationDTO:
