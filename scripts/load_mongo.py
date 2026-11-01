@@ -5,8 +5,8 @@ import random
 from pymongo import AsyncMongoClient
 
 from ingest_service.adapters.outbound.csv_recipe_source import CsvRecipeSource
+from ingest_service.domain.cuisines import CUISINES
 from ingest_service.domain.raw_recipe import RawRecipe
-from scripts.dataset_stats import CUISINES
 from writer_service.adapters.outbound.mongo_repositories import (
     MongoChefRepository,
     MongoRecipeRepository,
@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def clear_batch(batch: list[RawRecipe]) -> Recipe:
+def clear_batch(batch: list[RawRecipe]) -> list[Recipe]:
     return [
         Recipe(
             id=f"r-{recipe.source_id}",
@@ -57,7 +57,7 @@ def clear_batch(batch: list[RawRecipe]) -> Recipe:
             and recipe.cook_time_min >= 1
             else None,
             calories=recipe.calories
-            if recipe.calories is not None and recipe.calories <= 20000 and recipe.calories >= 1
+            if recipe.calories is not None and recipe.calories <= 20000 and recipe.calories >= 0
             else None,
             tags=recipe.tags if recipe.tags is not None else [],
             ingredients=recipe.ingredients if recipe.ingredients is not None else [],
@@ -95,7 +95,7 @@ async def main() -> None:
     chef_repo = MongoChefRepository(client=client, db_name="recipes")
 
     for _ in range(0, args.limit, args.batch_size):
-        batch = asyncio.run(source.next_batch(args.batch_size))
+        batch = await source.next_batch(args.batch_size)
         recipes = clear_batch(batch)
         print(f"Loaded {len(recipes)} recipes from {args.csv_path}")
         await recipe_repo.upsert_many(recipes)
