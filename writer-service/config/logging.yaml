@@ -18,8 +18,10 @@ handlers:
   file:
     class: logging.handlers.RotatingFileHandler
     filename: logs/writer_service.log
-    maxBytes: 1000000, backupCount: 3
-    encoding: utf-8, formatter: standard
+    maxBytes: 1000000
+    backupCount: 3
+    encoding: utf-8
+    formatter: standard
 
 loggers:
   writer_service:
