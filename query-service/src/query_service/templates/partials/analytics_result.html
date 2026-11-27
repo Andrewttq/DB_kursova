@@ -1,0 +1,45 @@
+{# Результат агрегації. Контекст: report (AggregationReportDTO). #}
+<h2>Як виконано запит</h2>
+{% if report.split_pipeline %}
+<div class="grid" style="margin-bottom:.6rem">
+  <div class="metric">Шардів у роботі<b>{{ report.shards|length }}</b></div>
+  <div class="metric">Загальний час<b>{{ report.total_ms }} мс</b></div>
+  <div class="metric">Хто склеював (reduce)<b style="font-size:1rem">{{ report.merge_type or "mongos" }}</b></div>
+</div>
+<table>
+  <tr><th>Етап</th><th>Де виконується</th><th>Стадії конвеєра</th></tr>
+  <tr><td>map + combine</td><td>на кожному шарді паралельно</td><td><code>{{ report.shards_part|join(" → ") }}</code></td></tr>
+  <tr><td>reduce</td><td>{{ report.merge_type or "mongos" }}</td><td><code>{{ report.merger_part|join(" → ") }}</code></td></tr>
+</table>
+{% else %}
+<p class="muted">Кластер не шардований (або explain недоступний): увесь запит виконав один сервер за {{ report.total_ms }} мс.
+Запустіть docker-compose.sharded.yml і підключіться до mongos, щоб побачити розподіл по шардах.</p>
+{% endif %}
+{% if report.shards %}
+<table style="margin-top:.6rem">
+  <tr><th>Шард</th><th class="num">Документів оброблено (map)</th><th class="num">Час на шарді, мс</th></tr>
+  {% for s in report.shards %}
+  <tr><td>{{ s.shard }}</td><td class="num">{{ s.docs_examined if s.docs_examined is not none else "—" }}</td>
+      <td class="num">{{ s.time_ms if s.time_ms is not none else "—" }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2 style="margin-top:1.2rem">Результат</h2>
+{% if report.stats %}
+<table>
+  <tr><th>Кухня</th><th class="num">Рецептів</th><th class="num">Середні калорії</th>
+      <th class="num">Середній час, хв</th><th class="num">Макс. калорії</th></tr>
+  {% for s in report.stats %}
+  <tr>
+    <td>{{ s.cuisine }}</td>
+    <td class="num">{{ "{:,}".format(s.recipes).replace(",", " ") }}</td>
+    <td class="num">{{ s.avg_calories if s.avg_calories is not none else "—" }}</td>
+    <td class="num">{{ s.avg_cook_time_min if s.avg_cook_time_min is not none else "—" }}</td>
+    <td class="num">{{ s.max_calories if s.max_calories is not none else "—" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>У колекції ще немає рецептів.</p>
+{% endif %}

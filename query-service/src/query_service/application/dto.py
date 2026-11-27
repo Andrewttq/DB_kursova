@@ -115,3 +115,32 @@ class StatsDTO(BaseModel):
     write_rps: float
     queue_depths: dict[str, int]  # за чергами: recipes.mongo, recipes.es, recipes.neo4j
     recent_searches: list[SearchLogDTO]
+
+
+# ---------- Аналітика (завдання 14) ----------
+
+
+class CuisineStatDTO(BaseModel):
+    cuisine: str
+    recipes: int
+    avg_calories: float | None
+    avg_cook_time_min: float | None
+    max_calories: float | None
+
+
+class ShardWorkDTO(BaseModel):
+    shard: str
+    docs_examined: int | None
+    time_ms: int | None
+
+
+class AggregationReportDTO(BaseModel):
+    """Результат агрегації + як її виконав кластер (етап map на шардах, reduce на mongos)."""
+
+    stats: list[CuisineStatDTO]
+    total_ms: float
+    split_pipeline: bool
+    merge_type: str | None
+    shards: list[ShardWorkDTO]
+    shards_part: list[str]
+    merger_part: list[str]

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Аналітика по шардах{% endblock %}
+{% block content %}
+  <h1>Статистика за кухнями</h1>
+  <p class="muted">
+    Один запит, зібраний з усіх шардів MongoDB (аналог map-reduce): кожен шард рахує часткові
+    підсумки над своїми документами, mongos склеює їх в одну таблицю.
+  </p>
+  <section>
+    <form class="filters" hx-get="/ui/analytics" hx-target="#analytics" hx-trigger="load, submit">
+      <label>Лише рецепти з часом до, хв
+        <input name="max_cook_time_min" type="number" min="1" placeholder="усі">
+      </label>
+      <button type="submit">Порахувати</button>
+      <span class="loading">рахуємо…</span>
+    </form>
+    <div id="analytics"></div>
+  </section>
+{% endblock %}
