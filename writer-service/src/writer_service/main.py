@@ -10,6 +10,7 @@
 import asyncio
 import logging.config
 import os
+
 import yaml
 
 from writer_service.container import build_container
@@ -17,8 +18,8 @@ from writer_service.settings import Settings
 
 
 def setup_logging(path: str) -> None:
+    os.makedirs("logs", exist_ok=True)
     with open(path, encoding="utf-8") as f:
-        os.makedirs("logs", exist_ok=True)
         logging.config.dictConfig(yaml.safe_load(f))
 
 
@@ -27,9 +28,15 @@ async def main() -> None:
     setup_logging(settings.log_config)
     container = build_container(settings)
 
+    # Схему сховища готуємо один раз при старті, до читання черги.
     if settings.writer_role == "es":
         await container.es_index.ensure_index()
+    elif settings.writer_role == "neo4j":
+        await container.graph.ensure_schema()
     await container.consumer.start()
+    logging.getLogger("writer_service").info(
+        "writer-service запущено, роль: %s", settings.writer_role
+    )
     try:
         await asyncio.Event().wait()  # працюємо, доки процес не зупинять (Ctrl+C)
     finally:
