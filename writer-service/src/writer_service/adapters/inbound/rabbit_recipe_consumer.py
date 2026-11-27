@@ -94,6 +94,10 @@ class RabbitRecipeConsumer:
 
         async def timer() -> None:
             await asyncio.sleep(self._batch_timeout_ms / 1000.0)
+            # Далі таймер уже не «чекає», а записує пачку: відв'язуємо його, щоб
+            # нове повідомлення (_start_timer) чи повна пачка (_process_batch)
+            # не скасували запис посеред save_batch — інакше пачка лишилась би без ack.
+            self._timer_task = None
             if self._current_batch:
                 await self._process_batch()
 
@@ -104,12 +108,10 @@ class RabbitRecipeConsumer:
         if not self._current_batch:
             return
 
-        # Таймер скасовуємо, лише якщо пачку закриває не він сам: інакше задача
-        # таймера скасувала б саму себе посеред save_batch, і повідомлення пачки
-        # залишились би без ack — після prefetch_count таких споживач зупиняється.
-        timer = self._timer_task
-        if timer and timer is not asyncio.current_task() and not timer.done():
-            timer.cancel()
+        # Скасовуємо лише таймер, який ще чекає (той, що вже записує, відв'язаний).
+        if self._timer_task and not self._timer_task.done():
+            self._timer_task.cancel()
+        self._timer_task = None
 
         batch_to_process = self._current_batch[:]
         messages_to_process = self._current_messages[:]
