@@ -1,0 +1,21 @@
+{# Керування швидкістю. Контекст: config (IngestConfigDTO). #}
+{# Будь-яка зміна слайдера надсилає форму POST /ui/generator, відповідь замінює цей блок. #}
+<form hx-post="/ui/generator" hx-target="#generator" hx-trigger="change delay:150ms">
+  <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap">
+    <input type="range" name="rate" min="10" max="5000" step="10" value="{{ config.rate_per_sec }}"
+           style="flex:1 1 300px" oninput="this.nextElementSibling.value = this.value">
+    <output>{{ config.rate_per_sec }}</output> записів/с
+    <input type="hidden" name="running" value="{{ '1' if config.running else '0' }}">
+    {% if config.running %}
+      <span class="badge ok">працює</span>
+      <button type="button" class="secondary"
+              hx-post="/ui/generator" hx-target="#generator" hx-include="closest form"
+              hx-vals='{"running": "0"}'>Стоп</button>
+    {% else %}
+      <span class="badge empty">зупинено</span>
+      <button type="button"
+              hx-post="/ui/generator" hx-target="#generator" hx-include="closest form"
+              hx-vals='{"running": "1"}'>Старт</button>
+    {% endif %}
+  </div>
+</form>
