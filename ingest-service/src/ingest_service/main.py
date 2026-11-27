@@ -6,6 +6,7 @@
 
 import asyncio
 import logging.config
+import os
 
 import yaml
 
@@ -15,6 +16,7 @@ from ingest_service.settings import Settings
 
 def setup_logging(path: str) -> None:
     """Налаштувати логування з YAML-файлу (див. config/logging.yaml)."""
+    os.makedirs("logs", exist_ok=True)
     with open(path, encoding="utf-8") as f:
         logging.config.dictConfig(yaml.safe_load(f))
 
@@ -28,7 +30,7 @@ async def main() -> None:
     try:
         await container.scheduler.run_forever()
     finally:
-        await container.publisher.close()
+        await container.close()
 
 
 if __name__ == "__main__":

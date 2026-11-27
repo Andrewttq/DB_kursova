@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # Обмінник типу fanout: кожне повідомлення копіюється в черги recipes.mongo,
     # recipes.es і recipes.neo4j, які оголошують екземпляри writer-service.
     rabbit_exchange: str = "recipes"
+    rabbit_queues: list[str] = ["recipes.mongo", "recipes.es", "recipes.neo4j"]
     redis_url: str = "redis://localhost:6379/0"
 
     ingest_csv_path: str = "data/RAW_recipes.csv"
