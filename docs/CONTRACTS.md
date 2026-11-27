@@ -12,6 +12,7 @@ Id документа = id рецепта, тому повторна індек�
 | ingredients | text (english) | повнотекстовий пошук |
 | cuisine | keyword | фільтр |
 | tags | keyword | фільтр |
+| chef_id | keyword | фільтр за автором |
 | cook_time_min | integer | фільтр за діапазоном |
 | calories | float | фільтр за діапазоном |
 
@@ -25,9 +26,9 @@ Id документа = id рецепта, тому повторна індек�
 | `stats:published` | string (лічильник, INCRBY) | ingest-service | query-service | немає |
 | `stats:saved:<роль>` | string (лічильник) | writer-service | query-service | немає |
 | `stats:failed:<роль>` | string (лічильник) | writer-service | query-service | немає |
-| `stats:saved:mongo:<unix-секунда>` | string (лічильник за секунду) | writer-service | query-service | короткий |
+| `stats:saved:<роль>:<unix-секунда>` | string (лічильник за секунду) | writer-service | query-service (write RPS бере роль mongo) | 60 с |
 | `search:<sha1>` | string (JSON зі списком результатів) | query-service | query-service | 300 с |
-| `search:log` | list (LPUSH + LTRIM до 100) | query-service | query-service | немає |
+| `search:log` | list (LPUSH + LTRIM до 100, JSON-записи) | query-service | query-service | немає |
 
 `<роль>` — одна з `mongo`, `es`, `neo4j` (змінна `WRITER_ROLE`).
-`<sha1>` — хеш від рядка «слова|фільтри|сторінка|розмір».
+`<sha1>` — хеш від рядка «слова|фільтри|сторінка|розмір».

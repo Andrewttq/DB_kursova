@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ card.title }}{% endblock %}
+{% block content %}
+  <p class="muted"><a href="/recipes">← усі рецепти</a></p>
+  <h1>{{ card.title }}</h1>
+  <p>
+    Автор: <a href="/chefs/{{ card.chef_id }}">{{ card.chef_name }}</a>
+    {% if card.cuisine %}· кухня: <span class="badge">{{ card.cuisine }}</span>{% endif %}
+    · час: {{ card.cook_time_min ~ " хв" if card.cook_time_min is not none else "невідомо" }}
+    · калорії: {{ "%.0f"|format(card.calories) if card.calories is not none else "невідомо" }}
+  </p>
+  {% if card.description %}<section><p style="margin:0">{{ card.description }}</p></section>{% endif %}
+
+  <div style="display:grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 1rem;">
+    <section>
+      <h2>Інгредієнти ({{ card.ingredients|length }})</h2>
+      <ul>{% for i in card.ingredients %}<li>{{ i }}</li>{% endfor %}</ul>
+    </section>
+    <section>
+      <h2>Приготування</h2>
+      <ol>{% for s in card.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+    </section>
+  </div>
+
+  <!-- Рекомендації з Neo4j підвантажуються окремим запитом після відкриття сторінки -->
+  <section>
+    <h2>Схожі рецепти</h2>
+    <div hx-get="/ui/recipes/{{ card.id }}/similar" hx-trigger="load">Завантаження…</div>
+  </section>
+
+  {% if card.tags %}
+  <p class="muted">Теги: {{ card.tags|join(", ") }}</p>
+  {% endif %}
+{% endblock %}

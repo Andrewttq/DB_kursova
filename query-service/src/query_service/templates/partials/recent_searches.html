@@ -1,0 +1,17 @@
+{# Останні пошукові запити. Контекст: entries (list[SearchLogDTO]). #}
+{% if entries %}
+<table>
+  <tr><th>Запит</th><th>Статус</th><th class="num">Результатів</th><th>Звідки</th><th>Час (UTC)</th></tr>
+  {% for e in entries %}
+  <tr>
+    <td>{{ e.query }}</td>
+    <td><span class="badge {{ 'ok' if e.status == 'Знайдено' else 'empty' }}">{{ e.status }}</span></td>
+    <td class="num">{{ e.hits_count }}</td>
+    <td>{{ "кеш" if e.from_cache else "Elasticsearch" }}</td>
+    <td class="muted">{{ e.timestamp.strftime("%H:%M:%S") }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">Ще не було жодного запиту.</p>
+{% endif %}

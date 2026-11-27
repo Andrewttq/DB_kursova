@@ -15,6 +15,10 @@ class RecipeReadRepository(ABC):
     async def find_by_ids(self, recipe_ids: list[str]) -> list[Recipe]: ...
 
     @abstractmethod
+    async def find_by_chef(self, chef_id: str, limit: int) -> list[Recipe]:
+        """Рецепти одного шефа (запасний шлях, коли граф Neo4j ще не наповнений)."""
+
+    @abstractmethod
     async def find_by_filter(
         self,
         cuisine: str | None,

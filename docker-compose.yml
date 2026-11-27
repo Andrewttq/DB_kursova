@@ -1,71 +1,151 @@
+# Інфраструктура проєкту. Запуск баз даних і брокера:
+#     docker compose up -d
+# Запуск ще й усіх сервісів у контейнерах (профіль app):
+#     docker compose --profile app up -d --build
+# Без профілю app сервіси запускаються локально через uv (див. README).
+# Шардований кластер MongoDB описано окремо: docker-compose.sharded.yml.
+
+x-app-env: &app-env
+  MONGO_URL: mongodb://mongo:27017
+  ES_URL: http://elasticsearch:9200
+  NEO4J_URL: bolt://neo4j:7687
+  NEO4J_PASSWORD: change-me
+  REDIS_URL: redis://redis:6379/0
+  RABBIT_URL: amqp://guest:guest@rabbitmq:5672/
+  RABBIT_MANAGEMENT_URL: http://rabbitmq:15672
+
 services:
+  # ---------------------------------------------------------------- бази даних
   mongo:
     image: mongo:7
-
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
-
     ports:
       - "27017:27017"
-
     volumes:
       - mongo-data:/data/db
-  writer-service:
-    build:
-      context: .
-      dockerfile: writer-service/Dockerfile
-    environment:
-      MONGO_URL: mongodb://mongo:27017
-    volumes:
-      - ./logs:/app/logs
-    depends_on:
-      mongo:
-        condition: service_healthy
-    command: ["python", "-m", "writer_service.demo"]
-
 
   redis:
     image: redis:7-alpine
-
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
-
     ports:
       - "6379:6379"
 
+  elasticsearch:
+    image: elasticsearch:8.15.0
+    environment:
+      - discovery.type=single-node
+      # без паролів і HTTPS: навчальний проєкт на власному комп'ютері
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  neo4j:
+    image: neo4j:5
+    environment:
+      - NEO4J_AUTH=neo4j/change-me
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p change-me 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    ports:
+      - "7474:7474" # Neo4j Browser: http://localhost:7474
+      - "7687:7687" # протокол bolt для драйвера
+    volumes:
+      - neo4j-data:/data
+
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
     ports:
       - "5672:5672"
-      - "15672:15672"
+      - "15672:15672" # панель RabbitMQ: http://localhost:15672 (guest / guest)
 
-
+  # ---------------------------------------------------------------- сервіси (профіль app)
   query-service:
+    profiles: ["app"]
     build:
       context: .
       dockerfile: query-service/Dockerfile
     ports:
       - "8000:8000"
-    environment:
-     MONGO_URL: mongodb://mongo:27017
-     REDIS_URL: redis://redis:6379/0
+    environment: *app-env
     volumes:
       - ./logs:/app/logs
     depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-       condition: service_healthy
+      mongo: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      elasticsearch: { condition: service_healthy }
 
+  # Три екземпляри writer-service з однаковим кодом, роль задає WRITER_ROLE.
+  writer-mongo:
+    profiles: ["app"]
+    build: { context: ., dockerfile: writer-service/Dockerfile }
+    environment: { <<: *app-env, WRITER_ROLE: mongo }
+    volumes: ["./logs:/app/logs"]
+    depends_on:
+      mongo: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  writer-es:
+    profiles: ["app"]
+    build: { context: ., dockerfile: writer-service/Dockerfile }
+    environment: { <<: *app-env, WRITER_ROLE: es }
+    volumes: ["./logs:/app/logs"]
+    depends_on:
+      elasticsearch: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  writer-neo4j:
+    profiles: ["app"]
+    build: { context: ., dockerfile: writer-service/Dockerfile }
+    environment: { <<: *app-env, WRITER_ROLE: neo4j }
+    volumes: ["./logs:/app/logs"]
+    depends_on:
+      neo4j: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  ingest-service:
+    profiles: ["app"]
+    build: { context: ., dockerfile: ingest-service/Dockerfile }
+    environment: *app-env
+    volumes:
+      - ./data:/app/data:ro # RAW_recipes.csv
+      - ./logs:/app/logs
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      writer-mongo: { condition: service_started }
 
 volumes:
   mongo-data:
+  es-data:
+  neo4j-data:

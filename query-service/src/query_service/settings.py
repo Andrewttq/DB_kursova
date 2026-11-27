@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     rabbit_queues: list[str] = ["recipes.mongo", "recipes.es", "recipes.neo4j"]
 
     search_cache_ttl_sec: int = 300
+    # false — вимкнути кеш пошуку (для нагрузочних тестів «без кешу»)
+    search_cache_enabled: bool = True
     ingest_default_rate: int = 10
 
     log_config: Path = SERVICE_DIR / "config" / "logging.yaml"

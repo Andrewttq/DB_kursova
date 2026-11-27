@@ -17,13 +17,18 @@ from neo4j import AsyncDriver, AsyncGraphDatabase
 from pymongo import AsyncMongoClient
 from redis.asyncio import Redis
 
+from query_service.adapters.inbound.analytics_controller import AnalyticsController
 from query_service.adapters.inbound.chef_controller import ChefController
 from query_service.adapters.inbound.health_controller import HealthController
 from query_service.adapters.inbound.monitoring_controller import MonitoringController
 from query_service.adapters.inbound.recipe_controller import RecipeController
+from query_service.adapters.inbound.recipe_pages_controller import RecipePagesController
 from query_service.adapters.inbound.search_controller import SearchController
 from query_service.adapters.inbound.ui_controller import UiController
 from query_service.adapters.outbound.elastic_repositories import ElasticRecipeSearchRepository
+from query_service.adapters.outbound.mongo_analytics_repository import (
+    MongoRecipeAnalyticsRepository,
+)
 from query_service.adapters.outbound.mongo_repositories import (
     MongoChefReadRepository,
     MongoRecipeReadRepository,
@@ -36,10 +41,12 @@ from query_service.adapters.outbound.redis_repositories import (
     RedisSearchLogRepository,
     RedisStatsReadRepository,
 )
+from query_service.application.facades.analytics_facade import AnalyticsFacade
 from query_service.application.facades.chef_query_facade import ChefQueryFacade
 from query_service.application.facades.monitoring_facade import MonitoringFacade
 from query_service.application.facades.recipe_query_facade import RecipeQueryFacade
 from query_service.application.facades.search_facade import SearchFacade
+from query_service.application.services.analytics_service import RecipeAnalyticsService
 from query_service.application.services.chef_service import ChefService
 from query_service.application.services.monitoring_services import (
     GeneratorControlService,
@@ -98,19 +105,24 @@ def build_container(settings: Settings) -> Container:
         RabbitQueueMetricsAdapter(http, settings.rabbit_management_url, settings.rabbit_queues),
     )
     generator = GeneratorControlService(
-        RedisIngestConfigRepository(redis), settings.ingest_default_rate
+        RedisIngestConfigRepository(redis, settings.ingest_default_rate),
+        settings.ingest_default_rate,
     )
+    analytics = RecipeAnalyticsService(MongoRecipeAnalyticsRepository(mongo, settings.mongo_db))
 
     # 3. Фасади (реалізації вхідних портів)
     recipe_facade = RecipeQueryFacade(recipes=recipes, chefs=chefs, relations=relations)
     chef_facade = ChefQueryFacade(chefs=chefs, relations=relations, recipes=recipes)
     search_facade = SearchFacade(
         normalizer=QueryNormalizer(),
-        cache=SearchCacheService(RedisSearchCache(redis), settings.search_cache_ttl_sec),
+        cache=SearchCacheService(
+            RedisSearchCache(redis), settings.search_cache_ttl_sec, settings.search_cache_enabled
+        ),
         search=RecipeSearchService(ElasticRecipeSearchRepository(es, settings.es_index)),
         log=search_log,
     )
     monitoring_facade = MonitoringFacade(stats=stats, search_log=search_log, generator=generator)
+    analytics_facade = AnalyticsFacade(analytics)
 
     # 4. Контролери (вхідні адаптери)
     routers = [
@@ -119,6 +131,8 @@ def build_container(settings: Settings) -> Container:
         HealthController(redis, mongo).router,
         SearchController(search_facade, templates).router,
         MonitoringController(monitoring_facade, monitoring_facade, templates).router,
+        RecipePagesController(recipe_facade, chef_facade, templates).router,
+        AnalyticsController(analytics_facade, templates).router,
         UiController(templates).router,
     ]
     return Container(mongo=mongo, es=es, neo4j=neo4j, redis=redis, http=http, routers=routers)
