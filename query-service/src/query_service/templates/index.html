@@ -1,40 +1,46 @@
-<!doctype html>
-<html lang="uk">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Recipes Hub — моніторинг</title>
-  <!-- HTMX: атрибути hx-* у розмітці замість власного JavaScript -->
-  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
-    section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-    em { background: #fff3a0; font-style: normal; }
-  </style>
-</head>
-<body>
-  <h1>Recipes Hub</h1>
-
-  <!-- 1. Керування швидкістю: при зміні слайдера HTMX надсилає PUT /api/generator -->
-  <section>
-    <h2>Швидкість завантаження</h2>
-    <!-- TODO: слайдер 10..5000 і кнопка Старт/Стоп -->
-  </section>
-
-  <!-- 2. Статистика: HTMX сам запитує /ui/stats щосекунди і підставляє відповідь -->
-  <section>
-    <h2>Статистика</h2>
-    <div hx-get="/ui/stats" hx-trigger="load, every 1s" hx-swap="innerHTML">
-      Завантаження…
-    </div>
-  </section>
-
-  <!-- 3. Пошук: результати підставляються в #results без перезавантаження сторінки -->
+{% extends "base.html" %}
+{% block title %}Recipes Hub: пошук і моніторинг{% endblock %}
+{% block content %}
+  <!-- 1. Пошук (зона C): результати підставляються в #results без перезавантаження сторінки -->
   <section>
     <h2>Пошук рецептів</h2>
-    <input type="search" name="q" placeholder="chicken garlic pasta"
-           hx-get="/ui/search" hx-trigger="keyup changed delay:300ms" hx-target="#results">
+    <form class="filters" hx-get="/ui/search" hx-target="#results"
+          hx-trigger="input changed delay:300ms from:input[name=q], change from:.filter, submit">
+      <label style="flex:1 1 320px">Запит
+        <input type="search" name="q" placeholder="chicken garlic pasta" autocomplete="off" autofocus>
+      </label>
+      <label>Кухня
+        <input class="filter" name="cuisine" list="cuisines" placeholder="будь-яка" size="12">
+      </label>
+      <label>Час, до хв
+        <input class="filter" name="max_cook_time_min" type="number" min="1" size="6">
+      </label>
+      <label>Калорії, до
+        <input class="filter" name="max_calories" type="number" min="0" size="6">
+      </label>
+      <datalist id="cuisines">
+        {% for c in ["american","italian","mexican","asian","french","greek","indian","chinese","thai","japanese"] %}
+          <option value="{{ c }}">{% endfor %}
+      </datalist>
+    </form>
     <div id="results"></div>
   </section>
-</body>
-</html>
+
+  <!-- 2. Останні запити (журнал у Redis, зона C) -->
+  <section>
+    <h2>Останні запити</h2>
+    <div hx-get="/ui/search/recent" hx-trigger="load, every 2s" hx-swap="innerHTML">Завантаження…</div>
+  </section>
+
+  <!-- 3. Керування швидкістю (зона A): слайдер надсилає POST /ui/generator -->
+  <section>
+    <h2>Швидкість завантаження</h2>
+    <div id="generator" hx-get="/ui/generator" hx-trigger="load">Завантаження…</div>
+  </section>
+
+  <!-- 4. Статистика (зона A): HTMX сам запитує /ui/stats щосекунди і підставляє відповідь -->
+  <section>
+    <h2>Статистика</h2>
+    <div hx-get="/ui/stats" hx-trigger="load, every 1s" hx-swap="innerHTML">Завантаження…</div>
+  </section>
+{% endblock %}

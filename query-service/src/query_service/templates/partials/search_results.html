@@ -1,3 +1,21 @@
-{# Фрагмент результатів пошуку. Контекст: result (SearchResponseDTO). #}
-{# snippet містить <em> від Elasticsearch, тому виводиться з фільтром |safe #}
-{# TODO: список карток, позначка «з кешу», час виконання, «Нічого не знайдено» #}
+{# Фрагмент результатів пошуку. Контекст: result (SearchResponseDTO), req (SearchRequestDTO). #}
+{# snippet містить <em> від Elasticsearch (encoder=html уже екранував решту), тому |safe #}
+<p class="muted">
+  Знайдено: {{ result.hits|length }}{% if result.hits|length == req.size %}+{% endif %}
+  · {{ result.took_ms }} мс
+  {% if result.from_cache %}· <span class="badge cache">з кешу</span>{% else %}· <span class="badge">з Elasticsearch</span>{% endif %}
+</p>
+{% for hit in result.hits %}
+  <div class="hit">
+    <a href="/recipes/{{ hit.recipe_id }}"><b>{{ hit.title }}</b></a>
+    <span class="muted">· релевантність {{ "%.2f"|format(hit.score) }}</span>
+    {% if hit.snippet %}<p>{{ hit.snippet|safe }}</p>{% endif %}
+  </div>
+{% else %}
+  <p>Нічого не знайдено. Спробуйте інші слова або приберіть фільтри.</p>
+{% endfor %}
+{% if result.hits|length == req.size %}
+  {# hx-include бере поточні значення з форми пошуку, змінюємо лише номер сторінки #}
+  <p><a href="#" hx-get="/ui/search?page={{ req.page + 1 }}" hx-include="form.filters"
+        hx-target="#results">Наступна сторінка →</a></p>
+{% endif %}
