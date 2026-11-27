@@ -39,4 +39,7 @@ known-first-party = ["contracts", "ingest_service", "writer_service", "query_ser
 [tool.pytest.ini_options]
 testpaths = ["contracts/tests", "ingest-service/tests", "writer-service/tests", "query-service/tests"]
 asyncio_mode = "auto"
-addopts = "--import-mode=importlib"
+# Інтеграційні тести (потребують запущених БД) за замовчуванням пропускаються.
+# Запустити їх: uv run pytest -m integration -v
+addopts = "--import-mode=importlib -m 'not integration'"
+markers = ["integration: потребує запущених баз даних (docker compose up -d)"]
