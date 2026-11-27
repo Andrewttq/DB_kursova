@@ -1,2 +1,20 @@
-{# Фрагмент статистики. Контекст: stats (StatsDTO). #}
-{# TODO: прочитано / збережено / write RPS / довжини трьох черг / останні запити зі статусом #}
+{# Фрагмент статистики. Контекст: stats (StatsDTO). Оновлюється щосекунди. #}
+<div class="grid">
+  <div class="metric">Прочитано з CSV<b>{{ "{:,}".format(stats.read_total).replace(",", " ") }}</b></div>
+  <div class="metric">Опубліковано в RabbitMQ<b>{{ "{:,}".format(stats.published_total).replace(",", " ") }}</b></div>
+  <div class="metric">Записано в MongoDB, за останню секунду<b>{{ "%.0f"|format(stats.write_rps) }} /с</b></div>
+  <div class="metric">Помилок запису (пачок)<b>{{ stats.failed_total }}</b></div>
+</div>
+<table style="margin-top:.8rem">
+  <tr><th>Сховище</th><th class="num">Збережено всього</th><th>Черга</th><th class="num">Чекає в черзі</th></tr>
+  {% for role in ["mongo", "es", "neo4j"] %}
+  {% set queue = "recipes." ~ role %}
+  <tr>
+    <td>{{ {"mongo": "MongoDB", "es": "Elasticsearch", "neo4j": "Neo4j"}[role] }}</td>
+    <td class="num">{{ "{:,}".format(stats.saved_total.get(role, 0)).replace(",", " ") }}</td>
+    <td class="muted">{{ queue }}</td>
+    <td class="num">{{ stats.queue_depths.get(queue, 0) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="muted">Якщо якась черга росте — це сховище не встигає записувати (вузьке місце).</p>
