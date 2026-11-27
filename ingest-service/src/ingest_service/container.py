@@ -26,12 +26,21 @@ from ingest_service.settings import Settings
 class Container:
     publisher: RabbitRecipePublisher
     scheduler: IngestScheduler
+    config: RedisIngestConfigRepository
+    stats: RedisIngestStatsRepository
+
+    async def close(self) -> None:
+        await self.publisher.close()
+        await self.config.close()
+        await self.stats.close()
 
 
 def build_container(settings: Settings) -> Container:
     # 1. Вихідні адаптери (конкретні реалізації портів)
     source = CsvRecipeSource(settings.ingest_csv_path)
-    publisher = RabbitRecipePublisher(settings.rabbit_url, settings.rabbit_exchange)
+    publisher = RabbitRecipePublisher(
+        settings.rabbit_url, settings.rabbit_exchange, settings.rabbit_queues
+    )
     config = RedisIngestConfigRepository(settings.redis_url, settings.ingest_default_rate)
     stats = RedisIngestStatsRepository(settings.redis_url)
 
@@ -46,4 +55,4 @@ def build_container(settings: Settings) -> Container:
 
     # 3. Вхідний адаптер отримує вхідний порт
     scheduler = IngestScheduler(service, settings.ingest_tick_seconds)
-    return Container(publisher=publisher, scheduler=scheduler)
+    return Container(publisher=publisher, scheduler=scheduler, config=config, stats=stats)

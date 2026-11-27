@@ -1,5 +1,7 @@
 """Вихідний адаптер — лічильники ingest-service у Redis."""
 
+from redis.asyncio import Redis
+
 from ingest_service.application.ports.outbound.ingest_stats_port import IngestStatsPort
 
 
@@ -12,10 +14,15 @@ class RedisIngestStatsRepository(IngestStatsPort):
     """
 
     def __init__(self, redis_url: str) -> None:
-        self._redis_url = redis_url
+        self._redis = Redis.from_url(redis_url)
 
     async def incr_read(self, count: int) -> None:
-        raise NotImplementedError
+        if count:
+            await self._redis.incrby("stats:read", count)
 
     async def incr_published(self, count: int) -> None:
-        raise NotImplementedError
+        if count:
+            await self._redis.incrby("stats:published", count)
+
+    async def close(self) -> None:
+        await self._redis.aclose()

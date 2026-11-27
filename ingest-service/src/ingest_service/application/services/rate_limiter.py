@@ -12,7 +12,15 @@ class RateLimiter:
 
     def __init__(self, tick_seconds: float = 0.1) -> None:
         self._tick_seconds = tick_seconds
+        self._tokens = 0.0
 
     def batch_size(self, rate_per_sec: int) -> int:
         """Скільки записів прочитати за один такт при заданій швидкості."""
-        raise NotImplementedError
+        self._tokens += max(rate_per_sec, 0) * self._tick_seconds
+        size = int(self._tokens)
+        self._tokens -= size
+        return size
+
+    def reset(self) -> None:
+        """Скинути залишок (після паузи, щоб не було «залпу» накопичених маркерів)."""
+        self._tokens = 0.0
