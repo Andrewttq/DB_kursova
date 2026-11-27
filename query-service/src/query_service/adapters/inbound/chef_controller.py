@@ -1,6 +1,6 @@
 """Вхідний адаптер — REST-контролер шефів."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from query_service.application.dto import ChefProfileDTO
 from query_service.application.ports.inbound.chef_use_cases import ChefQueryUseCase
@@ -14,4 +14,7 @@ class ChefController:
 
     async def get_chef(self, chef_id: str) -> ChefProfileDTO:
         """GET /api/chefs/{id} — профіль і рецепти шефа. None -> HTTP 404."""
-        raise NotImplementedError
+        profile = await self._use_case.get_chef_profile(chef_id)
+        if profile is None:
+            raise HTTPException(status_code=404, detail="Шефа не знайдено")
+        return profile

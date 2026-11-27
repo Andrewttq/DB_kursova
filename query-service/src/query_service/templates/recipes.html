@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Рецепти{% endblock %}
+{% block content %}
+  <h1>Рецепти</h1>
+  <!-- Повний шлях завдання 12: форма -> GET /ui/recipes -> контролер -> фасад -> сервіс -> репозиторій -> MongoDB -->
+  <section>
+    <form class="filters" hx-get="/ui/recipes" hx-target="#recipe-list" hx-trigger="load, change, submit">
+      <label>Кухня
+        <select name="cuisine">
+          <option value="">будь-яка</option>
+          {% for c in cuisines %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Час приготування, до хв
+        <input name="max_cook_time_min" type="number" min="1" placeholder="напр. 30">
+      </label>
+      <label>Калорійність, до
+        <input name="max_calories" type="number" min="0" placeholder="напр. 500">
+      </label>
+      <button type="submit">Показати</button>
+      <span class="loading">завантаження…</span>
+    </form>
+    <div id="recipe-list"></div>
+  </section>
+{% endblock %}

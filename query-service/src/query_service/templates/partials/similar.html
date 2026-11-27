@@ -1,0 +1,10 @@
+{# Схожі рецепти з Neo4j. Контекст: recs (list[RecommendationDTO]). #}
+{% if recs %}
+<ul>
+  {% for r in recs %}
+  <li><a href="/recipes/{{ r.recipe_id }}">{{ r.title }}</a> <span class="muted">({{ r.reason }})</span></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">Схожих рецептів поки немає (граф Neo4j ще не наповнений або недоступний).</p>
+{% endif %}
