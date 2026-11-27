@@ -1,3 +1,9 @@
+# Шардований кластер MongoDB (завдання 13): config server, 3 шарди, маршрутизатор mongos.
+# Запуск:
+#     docker compose -f docker-compose.sharded.yml up -d
+# Сервіс mongo-init один раз налаштовує кластер (scripts/init-cluster.js) і завершується.
+# Перевірити: docker compose -f docker-compose.sharded.yml logs mongo-init
+# Застосунок підключається до mongos: MONGO_URL=mongodb://localhost:27018 у .env
 services:
   mongo-cfg:
     image: mongo:8.0
@@ -31,8 +37,17 @@ services:
     image: mongo:8.0
     command: mongos --configdb cfgRS/mongo-cfg:27017 --port 27017 --bind_ip_all
     ports: ["27018:27017"]
+    depends_on: [mongo-cfg, mongo-shard1, mongo-shard2, mongo-shard3]
+    restart: unless-stopped
 
-
+  # Одноразове налаштування: ініціалізація replica set-ів, addShard, шардування колекції.
+  mongo-init:
+    image: mongo:8.0
+    depends_on: [mongos]
+    volumes:
+      - ./scripts/init-cluster.js:/scripts/init-cluster.js:ro
+    command: mongosh --nodb --quiet /scripts/init-cluster.js
+    restart: "no"
 
 volumes:
   cfg-data:
