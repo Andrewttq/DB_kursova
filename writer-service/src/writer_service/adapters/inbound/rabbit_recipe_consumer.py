@@ -5,12 +5,13 @@
 """
 
 import asyncio
-import json
 import logging
 
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
+from pydantic import ValidationError
 
+from contracts import RecipeIngestedEvent
 from writer_service.application.ports.inbound.save_recipes_use_case import SaveRecipesUseCase
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,9 @@ class RabbitRecipeConsumer:
       повідомлень (зворотний тиск);
     - пачка відправляється, коли набралося batch_size або минув batch_timeout_ms;
     - ack усіх повідомлень пачки — ЛИШЕ після успішного save_batch;
-    - при помилці — nack(requeue=True), повідомлення повернуться в чергу.
+    - при помилці — nack(requeue=True), повідомлення повернуться в чергу;
+    - повідомлення, яке не відповідає контракту (бите JSON, немає полів), відхиляється
+      без повернення в чергу (reject(requeue=False)), інакше воно поверталося б нескінченно.
     """
 
     def __init__(
@@ -49,8 +52,8 @@ class RabbitRecipeConsumer:
         self._prefetch_count = prefetch_count
         self._connection = None
         self._channel = None
-        self._current_batch = []
-        self._current_messages = []
+        self._current_batch: list[RecipeIngestedEvent] = []
+        self._current_messages: list[AbstractIncomingMessage] = []
         self._timer_task = None
 
     async def start(self) -> None:
@@ -60,18 +63,23 @@ class RabbitRecipeConsumer:
 
         await self._channel.set_qos(prefetch_count=self._prefetch_count)
         exchange = await self._channel.declare_exchange(
-            name=self._exchange_name, type=aio_pika.ExchangeType.FANOUT
+            name=self._exchange_name, type=aio_pika.ExchangeType.FANOUT, durable=True
         )
         queue = await self._channel.declare_queue(self._queue_name, durable=True)
         await queue.bind(exchange)
         await queue.consume(self._on_message)
-        logger.info(f"RabbitMQ consumer started on queue: {self._queue_name}")
+        logger.info("Споживач RabbitMQ слухає чергу %s", self._queue_name)
 
     async def _on_message(self, message: AbstractIncomingMessage) -> None:
         """Обробляє одне повідомлення, додає в пачку. Якщо пачка повна — зберігає."""
-        data = json.loads(message.body.decode("utf-8"))
+        try:
+            event = RecipeIngestedEvent.model_validate_json(message.body)
+        except ValidationError as exc:
+            logger.error("Повідомлення не відповідає контракту, відхилено: %s", exc)
+            await message.reject(requeue=False)
+            return
 
-        self._current_batch.append(data)
+        self._current_batch.append(event)
         self._current_messages.append(message)
         if len(self._current_batch) == 1:
             self._start_timer()
@@ -123,4 +131,4 @@ class RabbitRecipeConsumer:
             await self._channel.close()
         if self._connection and not self._connection.is_closed:
             await self._connection.close()
-        logger.info(f"RabbitMQ consumer stopped on queue: {self._queue_name}")
+        logger.info("Споживач RabbitMQ зупинено (черга %s)", self._queue_name)

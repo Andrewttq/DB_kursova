@@ -14,6 +14,12 @@ from writer_service.application.ports.outbound.recipe_repositories import (
 from writer_service.domain.recipe import Recipe
 
 
+def _dedupe(recipes: list[Recipe]) -> list[Recipe]:
+    """Якщо той самий рецепт двічі потрапив у пачку (повторна доставка),
+    залишаємо останню версію: upsert однаково дасть той самий результат."""
+    return list({r.id: r for r in recipes}.values())
+
+
 class RecipeInformationService:
     """Картки рецептів у MongoDB."""
 
@@ -21,7 +27,7 @@ class RecipeInformationService:
         self._repository = repository
 
     async def save_many(self, recipes: list[Recipe]) -> int:
-        raise NotImplementedError
+        return await self._repository.upsert_many(_dedupe(recipes))
 
 
 class RecipeRelationService:
@@ -31,7 +37,7 @@ class RecipeRelationService:
         self._graph = graph
 
     async def register_many(self, recipes: list[Recipe]) -> int:
-        raise NotImplementedError
+        return await self._graph.merge_many(_dedupe(recipes))
 
 
 class RecipeIndexService:
@@ -41,4 +47,4 @@ class RecipeIndexService:
         self._index = index
 
     async def index_many(self, recipes: list[Recipe]) -> int:
-        raise NotImplementedError
+        return await self._index.index_many(_dedupe(recipes))

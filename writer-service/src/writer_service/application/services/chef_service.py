@@ -9,5 +9,10 @@ class ChefService:
         self._repository = repository
 
     async def save_many(self, chefs: list[Chef]) -> int:
-        """Зберегти шефів пачки (без дублікатів у межах пачки)."""
-        raise NotImplementedError
+        """Зберегти шефів пачки (без дублікатів у межах пачки).
+
+        Один шеф часто має кілька рецептів в одній пачці; без дедуплікації
+        ми б записували той самий документ кілька разів поспіль.
+        """
+        unique = list({chef.id: chef for chef in chefs}.values())
+        return await self._repository.upsert_many(unique)

@@ -12,6 +12,7 @@ dependencies = [
     "redis>=5.0",
     "pydantic-settings>=2.4",
     "pyyaml>=6.0",
+    "faker>=30",
 ]
 
 [build-system]

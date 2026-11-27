@@ -39,6 +39,7 @@ class Container:
     neo4j: AsyncDriver
     redis: Redis
     es_index: ElasticRecipeIndexRepository
+    graph: Neo4jRecipeGraphRepository
     consumer: RabbitRecipeConsumer
 
     async def close(self) -> None:
@@ -86,5 +87,11 @@ def build_container(settings: Settings) -> Container:
         prefetch_count=settings.writer_prefetch_count,
     )
     return Container(
-        mongo=mongo, es=es, neo4j=neo4j, redis=redis, es_index=es_index, consumer=consumer
+        mongo=mongo,
+        es=es,
+        neo4j=neo4j,
+        redis=redis,
+        es_index=es_index,
+        graph=graph_repo,
+        consumer=consumer,
     )
