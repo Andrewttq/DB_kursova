@@ -91,6 +91,9 @@ services:
   # ---------------------------------------------------------------- сервіси (профіль app)
   query-service:
     profiles: ["app"]
+    # якщо сервіс упав при старті (RabbitMQ уже «healthy», але ще не приймає
+    # з'єднання), Docker перезапустить його сам
+    restart: on-failure
     build:
       context: .
       dockerfile: query-service/Dockerfile
@@ -107,6 +110,7 @@ services:
   # Три екземпляри writer-service з однаковим кодом, роль задає WRITER_ROLE.
   writer-mongo:
     profiles: ["app"]
+    restart: on-failure
     build: { context: ., dockerfile: writer-service/Dockerfile }
     environment: { <<: *app-env, WRITER_ROLE: mongo }
     volumes: ["./logs:/app/logs"]
@@ -117,6 +121,7 @@ services:
 
   writer-es:
     profiles: ["app"]
+    restart: on-failure
     build: { context: ., dockerfile: writer-service/Dockerfile }
     environment: { <<: *app-env, WRITER_ROLE: es }
     volumes: ["./logs:/app/logs"]
@@ -127,6 +132,7 @@ services:
 
   writer-neo4j:
     profiles: ["app"]
+    restart: on-failure
     build: { context: ., dockerfile: writer-service/Dockerfile }
     environment: { <<: *app-env, WRITER_ROLE: neo4j }
     volumes: ["./logs:/app/logs"]
@@ -137,6 +143,7 @@ services:
 
   ingest-service:
     profiles: ["app"]
+    restart: on-failure
     build: { context: ., dockerfile: ingest-service/Dockerfile }
     environment:
       <<: *app-env
