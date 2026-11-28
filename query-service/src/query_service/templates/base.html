@@ -5,8 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Recipes Hub{% endblock %}</title>
-  <!-- HTMX: атрибути hx-* у розмітці замість власного JavaScript -->
-  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+  <!-- HTMX: атрибути hx-* у розмітці замість власного JavaScript.
+       Файл лежить у static/, тож інтерфейс працює і без інтернету (на захисті теж). -->
+  <script src="/static/htmx.min.js"></script>
   <style>
     :root { --line: #e3e3e3; --muted: #6b6b6b; --accent: #b4441f; --bg-soft: #f7f5f2; }
     * { box-sizing: border-box; }
@@ -17,7 +18,8 @@
     header .logo { font-weight: 700; font-size: 1.25rem; color: var(--accent); text-decoration: none; }
     header nav a { margin-right: 1rem; color: #1d1d1d; text-decoration: none; }
     header nav a:hover { color: var(--accent); }
-    section { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    section { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem;
+              overflow-x: auto; }
     h1 { margin: .2rem 0 .8rem; } h2 { margin: 0 0 .6rem; font-size: 1.15rem; }
     a { color: var(--accent); }
     em { background: #fff1a8; font-style: normal; padding: 0 1px; }
@@ -31,7 +33,7 @@
     button.secondary { background: #fff; color: var(--accent); }
     input[type=search] { width: 100%; }
     table { border-collapse: collapse; width: 100%; font-size: .95rem; }
-    th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--line); }
+    th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
     th { font-weight: 600; background: var(--bg-soft); }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     .hit { padding: .6rem 0; border-bottom: 1px solid var(--line); }

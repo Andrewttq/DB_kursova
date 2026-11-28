@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     # recipes.es і recipes.neo4j, які оголошують екземпляри writer-service.
     rabbit_exchange: str = "recipes"
     rabbit_queues: list[str] = ["recipes.mongo", "recipes.es", "recipes.neo4j"]
+    # true — повідомлення записуються на диск RabbitMQ і переживають його перезапуск,
+    # але кожне підтвердження чекає fsync (у Docker на Windows ~50 мс) і стеля ~250/с.
+    # false — повідомлення лише в пам'яті: 5000/с, а при падінні RabbitMQ втрачається
+    # тільки ще не записаний хвіст черги (джерело істини — MongoDB і CSV).
+    rabbit_persistent: bool = True
     redis_url: str = "redis://localhost:6379/0"
 
     ingest_csv_path: str = "data/RAW_recipes.csv"

@@ -42,5 +42,5 @@ class ChefQueryFacade(ChefQueryUseCase):
         return ChefProfileDTO(
             id=chef.id,
             full_name=chef.full_name,
-            recipes=[mappers.recipe_to_short_dto(r) for r in recipes],
+            recipes=[mappers.recipe_to_short_dto(r) for r in mappers.unique_by_title(recipes)],
         )

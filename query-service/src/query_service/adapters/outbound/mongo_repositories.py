@@ -70,12 +70,13 @@ class MongoRecipeReadRepository(RecipeReadRepository):
         if max_calories is not None:
             query["calories"] = {"$lte": max_calories}
 
-        cursor = (
-            self._collection.find(query)
-            .sort([("cook_time_min", 1), ("_id", 1)])
-            .skip(skip)
-            .limit(limit)
-        )
+        # З фільтром за часом сортуємо за часом (індекс cuisine/cook_time_min/calories);
+        # без нього — за _id: інакше першими йшли б рецепти без часу (null < будь-яке число).
+        if max_cook_time_min is not None:
+            order = [("cook_time_min", 1), ("_id", 1)]
+        else:
+            order = [("_id", 1)]
+        cursor = self._collection.find(query).sort(order).skip(skip).limit(limit)
         return [_to_recipe(doc) for doc in await cursor.to_list()]
 
 

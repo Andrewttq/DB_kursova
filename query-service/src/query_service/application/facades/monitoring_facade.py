@@ -42,6 +42,8 @@ class MonitoringFacade(StatsQueryUseCase, GeneratorControlUseCase):
             failed_total=snap.failed_total,
             write_rps=snap.write_rps,
             queue_depths=snap.queue_depths,
+            published_rps=snap.published_rps,
+            saved_rps=snap.saved_rps,
             recent_searches=[mappers.log_entry_to_dto(e) for e in recent],
         )
 

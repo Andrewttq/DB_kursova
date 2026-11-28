@@ -85,3 +85,34 @@ async def test_search_works_when_redis_is_down():
     result = await facade.search(SearchRequestDTO(query="garlic"))
     assert [h.recipe_id for h in result.hits] == ["r1"]
     assert result.from_cache is False
+
+
+async def test_rates_are_counter_difference_over_time():
+    """Швидкість = різниця лічильників Redis за минулий час."""
+    from query_service.application.services.monitoring_services import StatsService
+
+    class Counters:
+        def __init__(self):
+            self.values = {"published": 0, "saved:mongo": 0, "saved:es": 0, "saved:neo4j": 0}
+
+        async def get_counters(self):
+            return dict(self.values)
+
+        async def get_saved_last_second(self):
+            return 0
+
+    class Queues:
+        async def get_queue_depths(self):
+            return {}
+
+    now = [100.0]
+    counters = Counters()
+    service = StatsService(counters, Queues(), clock=lambda: now[0])
+    await service.snapshot()  # перша точка
+
+    now[0] += 2
+    counters.values.update({"published": 10000, "saved:mongo": 8000})
+    snap = await service.snapshot()
+
+    assert snap.published_rps == 5000
+    assert snap.saved_rps == {"mongo": 4000, "es": 0, "neo4j": 0}

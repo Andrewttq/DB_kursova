@@ -32,7 +32,9 @@ UNWIND row.ingredients AS name
 MERGE (i:Ingredient {name: name})
 MERGE (r)-[:CONTAINS]->(i)
 WITH DISTINCT i
-SET i.recipe_count = COUNT { (i)<-[:CONTAINS]-(:Recipe) }
+// Без мітки на іншому кінці Neo4j бере кількість зв'язків зі «степеня» вузла за O(1),
+// а не обходить сотні тисяч зв'язків у salt чи butter. CONTAINS веде лише від Recipe.
+SET i.recipe_count = COUNT { (i)<-[:CONTAINS]-() }
 RETURN count(i) AS ingredients
 """
 
