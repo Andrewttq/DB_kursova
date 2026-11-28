@@ -6,6 +6,7 @@
 У тестах замість цього файлу можна зібрати сервіс із фейковими адаптерами.
 """
 
+import time
 from dataclasses import dataclass
 
 from ingest_service.adapters.inbound.ingest_scheduler import IngestScheduler
@@ -39,7 +40,10 @@ def build_container(settings: Settings) -> Container:
     # 1. Вихідні адаптери (конкретні реалізації портів)
     source = CsvRecipeSource(settings.ingest_csv_path)
     publisher = RabbitRecipePublisher(
-        settings.rabbit_url, settings.rabbit_exchange, settings.rabbit_queues
+        settings.rabbit_url,
+        settings.rabbit_exchange,
+        settings.rabbit_queues,
+        persistent=settings.rabbit_persistent,
     )
     config = RedisIngestConfigRepository(settings.redis_url, settings.ingest_default_rate)
     stats = RedisIngestStatsRepository(settings.redis_url)
@@ -50,7 +54,7 @@ def build_container(settings: Settings) -> Container:
         publisher=publisher,
         config=config,
         stats=stats,
-        rate_limiter=RateLimiter(settings.ingest_tick_seconds),
+        rate_limiter=RateLimiter(settings.ingest_tick_seconds, clock=time.monotonic),
     )
 
     # 3. Вхідний адаптер отримує вхідний порт

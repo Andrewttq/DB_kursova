@@ -63,9 +63,11 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/change-me
     healthcheck:
+      # cypher-shell — це JVM, під навантаженням стартує довше за 5 с; інакше Neo4j
+      # помилково ставав unhealthy і writer-neo4j не запускався
       test: ["CMD-SHELL", "cypher-shell -u neo4j -p change-me 'RETURN 1' || exit 1"]
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 30s
       retries: 20
       start_period: 20s
     ports:
@@ -136,7 +138,11 @@ services:
   ingest-service:
     profiles: ["app"]
     build: { context: ., dockerfile: ingest-service/Dockerfile }
-    environment: *app-env
+    environment:
+      <<: *app-env
+      # повідомлення лише в пам'яті RabbitMQ: інакше fsync у Docker на Windows
+      # обмежує публікацію ~250/с замість 5000/с (див. ingest-service/settings.py)
+      RABBIT_PERSISTENT: "false"
     volumes:
       - ./data:/app/data:ro # RAW_recipes.csv
       - ./logs:/app/logs

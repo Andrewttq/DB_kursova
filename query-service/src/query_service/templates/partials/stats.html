@@ -1,19 +1,27 @@
 {# Фрагмент статистики. Контекст: stats (StatsDTO). Оновлюється щосекунди. #}
+{% set names = {"mongo": "MongoDB", "es": "Elasticsearch", "neo4j": "Neo4j"} %}
+<div class="grid">
+  <div class="metric">Публікація в RabbitMQ<b>{{ "%.0f"|format(stats.published_rps) }} /с</b></div>
+  {% for role in ["mongo", "es", "neo4j"] %}
+  <div class="metric">Запис у {{ names[role] }}<b>{{ "%.0f"|format(stats.saved_rps.get(role, 0)) }} /с</b></div>
+  {% endfor %}
+</div>
+<p class="muted" style="margin:.4rem 0 .8rem">Середня швидкість за останні ~5 с (різниця лічильників у Redis).</p>
 <div class="grid">
   <div class="metric">Прочитано з CSV<b>{{ "{:,}".format(stats.read_total).replace(",", " ") }}</b></div>
   <div class="metric">Опубліковано в RabbitMQ<b>{{ "{:,}".format(stats.published_total).replace(",", " ") }}</b></div>
-  <div class="metric">Записано в MongoDB, за останню секунду<b>{{ "%.0f"|format(stats.write_rps) }} /с</b></div>
   <div class="metric">Помилок запису (пачок)<b>{{ stats.failed_total }}</b></div>
 </div>
 <table style="margin-top:.8rem">
-  <tr><th>Сховище</th><th class="num">Збережено всього</th><th>Черга</th><th class="num">Чекає в черзі</th></tr>
+  <tr><th>Сховище</th><th class="num">Швидкість, /с</th><th class="num">Збережено всього</th><th>Черга</th><th class="num">Чекає в черзі</th></tr>
   {% for role in ["mongo", "es", "neo4j"] %}
   {% set queue = "recipes." ~ role %}
   <tr>
-    <td>{{ {"mongo": "MongoDB", "es": "Elasticsearch", "neo4j": "Neo4j"}[role] }}</td>
+    <td>{{ names[role] }}</td>
+    <td class="num">{{ "%.0f"|format(stats.saved_rps.get(role, 0)) }}</td>
     <td class="num">{{ "{:,}".format(stats.saved_total.get(role, 0)).replace(",", " ") }}</td>
     <td class="muted">{{ queue }}</td>
-    <td class="num">{{ stats.queue_depths.get(queue, 0) }}</td>
+    <td class="num">{{ "{:,}".format(stats.queue_depths.get(queue, 0)).replace(",", " ") }}</td>
   </tr>
   {% endfor %}
 </table>

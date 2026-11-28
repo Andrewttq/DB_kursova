@@ -15,7 +15,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from query_service.application.dto import RecipeFilterDTO
+from query_service.application.dto import RecipeFilterDTO, RecipeShortDTO
 from query_service.application.ports.inbound.chef_use_cases import ChefQueryUseCase
 from query_service.application.ports.inbound.recipe_use_cases import RecipeQueryUseCase
 
@@ -34,6 +34,17 @@ PAGE_SIZE = 20
 def _int_or_none(value: str | None) -> int | None:
     """Порожнє поле форми приходить як "", а не None — перетворюємо самі."""
     return int(value) if value and value.strip().isdigit() else None
+
+
+def _unique_by_title(recipes: list[RecipeShortDTO]) -> list[RecipeShortDTO]:
+    """Генератор повторює датасет по колу (r-123, r-123-2, ...): показуємо одну назву раз."""
+    seen: set[str] = set()
+    result = []
+    for r in recipes:
+        if r.title not in seen:
+            seen.add(r.title)
+            result.append(r)
+    return result
 
 
 class RecipePagesController:
@@ -78,7 +89,11 @@ class RecipePagesController:
         return self._templates.TemplateResponse(
             request,
             "partials/recipe_list.html",
-            {"recipes": recipes, "flt": flt, "has_next": len(recipes) == PAGE_SIZE},
+            {
+                "recipes": _unique_by_title(recipes),
+                "flt": flt,
+                "has_next": len(recipes) == PAGE_SIZE,
+            },
         )
 
     async def recipe_page(self, request: Request, recipe_id: str) -> HTMLResponse:

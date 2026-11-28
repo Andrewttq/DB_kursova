@@ -11,6 +11,18 @@ from query_service.domain.recipe import Recipe, Recommendation
 from query_service.domain.search import SearchHit, SearchLogEntry
 
 
+def unique_by_title(recipes: list[Recipe]) -> list[Recipe]:
+    """Генератор повторює датасет по колу (r-123, r-123-2, ...), тому в списках
+    трапляються однакові рецепти. Лишаємо перший рецепт з кожною назвою."""
+    seen: set[str] = set()
+    result = []
+    for r in recipes:
+        if r.title not in seen:
+            seen.add(r.title)
+            result.append(r)
+    return result
+
+
 def recipe_to_short_dto(recipe: Recipe) -> RecipeShortDTO:
     return RecipeShortDTO(
         id=recipe.id,

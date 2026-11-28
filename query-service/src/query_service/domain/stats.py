@@ -1,6 +1,6 @@
 """Доменні класи статистики."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -13,6 +13,9 @@ class SystemStats:
     failed_total: int
     write_rps: float  # збережено в MongoDB за останню секунду (з лічильників Redis)
     queue_depths: dict[str, int]  # повідомлень у чергах recipes.mongo / .es / .neo4j
+    # середня швидкість за останні ~5 с, записів/с (різниця лічильників Redis за час)
+    published_rps: float = 0.0
+    saved_rps: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass

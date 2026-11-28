@@ -10,15 +10,18 @@ from query_service.domain.recipe import Recommendation
 # Інгредієнти, що входять у понад 5000 рецептів (salt, butter, sugar), не враховуються:
 # обхід через них проходить сотні тисяч шляхів і нічого не каже про схожість.
 # Решта зважується за рідкісністю: внесок інгредієнта дорівнює 1 / recipe_count.
+# Спершу — більше спільних інгредієнтів, серед рівних — рідкісніші.
 SIMILAR_QUERY = """
 MATCH (r:Recipe {id: $id})-[:CONTAINS]->(i:Ingredient)
 WHERE coalesce(i.recipe_count, 1) < $max_ingredient_freq
 MATCH (i)<-[:CONTAINS]-(o:Recipe)
-WHERE o <> r
-RETURN o.id AS id, o.title AS title,
-       count(i) AS common_ingredients,
-       sum(1.0 / coalesce(i.recipe_count, 1)) AS score
-ORDER BY score DESC
+WHERE o <> r AND o.title <> r.title
+WITH o, count(i) AS common, sum(1.0 / coalesce(i.recipe_count, 1)) AS weight
+// генератор повторює датасет по колу (r-123, r-123-2, ...): одна назва — один рядок
+WITH o.title AS title, min(o.id) AS id, max(common) AS common_ingredients,
+     max(weight) AS score
+RETURN id, title, common_ingredients, score
+ORDER BY common_ingredients DESC, score DESC
 LIMIT $limit
 """
 

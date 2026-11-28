@@ -68,3 +68,19 @@ async def test_chef_profile_keeps_graph_order():
 
 async def test_unknown_chef_returns_none():
     assert await facades()[1].get_chef_profile("nobody") is None
+
+
+async def test_chef_profile_shows_each_title_once():
+    """Генератор повторює датасет по колу (r1 і r1-2) — у профілі шефа одна назва один раз."""
+    copies = [
+        *RECIPES,
+        Recipe(id="r1-2", title="Borscht", chef_id="c1", cuisine="ukrainian", cook_time_min=90),
+    ]
+    graph = FakeGraph(chef_recipes=["r1", "r2", "r1-2"])
+    relations = RecipeRelationService(graph)
+    recipes = RecipeInformationService(FakeRecipes(copies))
+    facade = ChefQueryFacade(chefs=ChefService(FakeChefs()), relations=relations, recipes=recipes)
+
+    profile = await facade.get_chef_profile("c1")
+
+    assert [r.title for r in profile.recipes] == ["Borscht", "Pasta"]

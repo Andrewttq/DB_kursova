@@ -55,6 +55,10 @@ class RabbitRecipeConsumer:
         self._current_batch: list[RecipeIngestedEvent] = []
         self._current_messages: list[AbstractIncomingMessage] = []
         self._timer_task = None
+        # Одна пачка пишеться за раз. Поки йде запис, наступна пачка набирається
+        # (prefetch_count дозволяє ще стільки ж непідтверджених повідомлень),
+        # тож пачки великі, а паралельні транзакції не блокують одна одну (Neo4j).
+        self._write_lock = asyncio.Lock()
 
     async def start(self) -> None:
         """Підключитися, оголосити обмінник і чергу, прив'язати чергу, почати споживання."""
@@ -94,6 +98,10 @@ class RabbitRecipeConsumer:
 
         async def timer() -> None:
             await asyncio.sleep(self._batch_timeout_ms / 1000.0)
+            # Далі таймер уже не «чекає», а записує пачку: відв'язуємо його, щоб
+            # нове повідомлення (_start_timer) чи повна пачка (_process_batch)
+            # не скасували запис посеред save_batch — інакше пачка лишилась би без ack.
+            self._timer_task = None
             if self._current_batch:
                 await self._process_batch()
 
@@ -101,29 +109,29 @@ class RabbitRecipeConsumer:
 
     async def _process_batch(self) -> None:
         """Відправляє пачку в use case і робить ack/nack."""
-        if not self._current_batch:
-            return
+        async with self._write_lock:
+            # Поки чекали на попередній запис, пачку могли вже забрати — тоді нічого робити.
+            if not self._current_batch:
+                return
 
-        # Таймер скасовуємо, лише якщо пачку закриває не він сам: інакше задача
-        # таймера скасувала б саму себе посеред save_batch, і повідомлення пачки
-        # залишились би без ack — після prefetch_count таких споживач зупиняється.
-        timer = self._timer_task
-        if timer and timer is not asyncio.current_task() and not timer.done():
-            timer.cancel()
+            # Скасовуємо лише таймер, який ще чекає (той, що вже записує, відв'язаний).
+            if self._timer_task and not self._timer_task.done():
+                self._timer_task.cancel()
+            self._timer_task = None
 
-        batch_to_process = self._current_batch[:]
-        messages_to_process = self._current_messages[:]
-        self._current_batch.clear()
-        self._current_messages.clear()
+            batch_to_process = self._current_batch[:]
+            messages_to_process = self._current_messages[:]
+            self._current_batch.clear()
+            self._current_messages.clear()
 
-        try:
-            await self._use_case.save_batch(batch_to_process)
-            for msg in messages_to_process:
-                await msg.ack()
-        except Exception as e:
-            logger.error("Помилка обробки пачки: %s", e)
-            for msg in messages_to_process:
-                await msg.nack(requeue=True)
+            try:
+                await self._use_case.save_batch(batch_to_process)
+                for msg in messages_to_process:
+                    await msg.ack()
+            except Exception as e:
+                logger.error("Помилка обробки пачки: %s", e)
+                for msg in messages_to_process:
+                    await msg.nack(requeue=True)
 
     async def stop(self) -> None:
         """Дописати поточну пачку і закрити з'єднання."""

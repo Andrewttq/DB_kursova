@@ -66,7 +66,9 @@ class CsvRecipeSource(RecipeSourcePort):
         async with self._lock:
             if self._reader is None:
                 await asyncio.to_thread(self._open_file)
-            batch = await asyncio.to_thread(self._read_batch, size)
-            if len(batch) < size:
+            # Читання і розбір рядків — в окремому потоці: при 5000 записів/с розбір
+            # списків займає помітний час і не повинен гальмувати публікацію.
+            rows = await asyncio.to_thread(self._read_batch, size)
+            if len(rows) < size:
                 await asyncio.to_thread(self._close_file)
-            return [self._row_to_raw_recipe(row) for row in batch]
+            return await asyncio.to_thread(lambda: [self._row_to_raw_recipe(r) for r in rows])

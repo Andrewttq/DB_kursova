@@ -115,6 +115,8 @@ class StatsDTO(BaseModel):
     write_rps: float
     queue_depths: dict[str, int]  # за чергами: recipes.mongo, recipes.es, recipes.neo4j
     recent_searches: list[SearchLogDTO]
+    published_rps: float = 0.0  # середня швидкість за ~5 с, записів/с
+    saved_rps: dict[str, float] = {}
 
 
 # ---------- Аналітика (завдання 14) ----------

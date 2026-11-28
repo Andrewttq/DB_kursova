@@ -38,15 +38,21 @@ class RabbitRecipePublisher(RecipePublisherPort):
     і серіалізується в JSON (event.model_dump_json()).
     Публікація йде в обмінник типу fanout, а не в чергу: RabbitMQ сам копіює
     кожне повідомлення в усі прив'язані черги (recipes.mongo, recipes.es, recipes.neo4j).
-    Обмінник durable, повідомлення persistent — не губляться при перезапуску RabbitMQ.
+    Обмінник durable; повідомлення persistent (не губляться при перезапуску RabbitMQ)
+    або, для швидкості 5000/с, лише в пам'яті — див. Settings.rabbit_persistent.
     Черги теж оголошуються тут: якщо ingest запустили раніше за writer-service,
     повідомлення чекатимуть у черзі, а не зникнуть (fanout без черг їх викидає).
     Підтвердження публікації (publisher confirms) увімкнені; повідомлення пачки
     публікуються паралельно, тому чекаємо підтвердження всієї пачки разом, а не кожного окремо.
     """
 
-    def __init__(self, rabbit_url: str, exchange_name: str, queue_names: list[str]) -> None:
+    def __init__(
+        self, rabbit_url: str, exchange_name: str, queue_names: list[str], persistent: bool = True
+    ) -> None:
         self._rabbit_url = rabbit_url
+        self._delivery_mode = (
+            aio_pika.DeliveryMode.PERSISTENT if persistent else aio_pika.DeliveryMode.NOT_PERSISTENT
+        )
         self._exchange_name = exchange_name
         self._queue_names = queue_names
         self._connection: aio_pika.abc.AbstractRobustConnection | None = None
@@ -71,7 +77,7 @@ class RabbitRecipePublisher(RecipePublisherPort):
             aio_pika.Message(
                 body=to_event(r).model_dump_json().encode("utf-8"),
                 content_type="application/json",
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                delivery_mode=self._delivery_mode,
             )
             for r in recipes
         ]
